@@ -1,7 +1,7 @@
 import { beforeAll, describe, expect, it } from "vitest";
 
 process.env.PGLITE_DIR = "memory";
-delete process.env.DATABASE_URL;
+for (const name of ["DATABASE_URL", "POSTGRES_URL", "STORAGE_URL", "DATABASE_URL_UNPOOLED"]) delete process.env[name];
 
 const repo = await import("@/lib/server/books-repo");
 const { runBookTool } = await import("@/lib/server/tools");

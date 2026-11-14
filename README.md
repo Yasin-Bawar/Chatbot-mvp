@@ -78,11 +78,15 @@ To try the UI without an API key, set `MOCK_AI=1` in `.env.local`. Demo answers 
 ## نشر روی Vercel / Deploy on Vercel
 
 1. Push this repository to GitHub and import it in Vercel.
-2. In the project, open **Storage**:
-   - Add a **Neon Postgres** database. This creates `DATABASE_URL`.
-   - Optionally add a **Blob** store with **public** access. This creates `BLOB_READ_WRITE_TOKEN` and keeps the original PDFs.
-3. In **Settings → Environment Variables**, add `ANTHROPIC_API_KEY`.
-4. Deploy. Tables are created automatically on the first request.
+2. In the project, open **Storage** and add a **Neon Postgres** database. In the **Connect a Project** dialog:
+   - **Environments:** Production and Preview (add Development only if you want the same database locally).
+   - **Create database branch for deployment:** leave both unchecked, so every deployment uses the same books.
+   - **Custom Prefix:** type `DATABASE`, so the variable is `DATABASE_URL`. The app also accepts `STORAGE_URL` if you keep the default.
+   - **Sensitive:** leave on, then click **Connect**.
+3. Optionally add a **Blob** store with **public** access. This creates `BLOB_READ_WRITE_TOKEN` and keeps the original PDFs.
+4. In **Settings → Environment Variables**, add `ANTHROPIC_API_KEY`.
+5. **Redeploy** (Deployments → … → Redeploy): new variables only apply to new deployments. Tables are created automatically on the first request.
+6. Check: `https://<your-site>/api/books` should return `"configured":true`.
 
 The chat and page-reading routes can run for up to 300 seconds, the Hobby plan limit.
 

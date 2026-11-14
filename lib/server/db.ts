@@ -34,8 +34,19 @@ const SCHEMA = [
   `CREATE INDEX IF NOT EXISTS pages_terms_gin ON pages USING GIN (terms)`,
 ];
 
+/**
+ * Connection string from the Vercel Neon integration. The variable name depends on
+ * the "Custom Prefix" chosen when connecting the database (DATABASE → DATABASE_URL,
+ * default STORAGE → STORAGE_URL), so accept the common names.
+ */
 function databaseUrl(): string | undefined {
-  return process.env.DATABASE_URL || process.env.POSTGRES_URL || undefined;
+  return (
+    process.env.DATABASE_URL ||
+    process.env.POSTGRES_URL ||
+    process.env.STORAGE_URL ||
+    process.env.DATABASE_URL_UNPOOLED ||
+    undefined
+  );
 }
 
 /**
