@@ -5,6 +5,7 @@ import { memo, useMemo, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import rehypeKatex from "rehype-katex";
 import remarkMath from "remark-math";
+import { parseLooseJson } from "@/lib/json-repair";
 import { toFaDigits } from "@/lib/persian";
 import { cn } from "@/lib/utils";
 
@@ -26,8 +27,8 @@ const rehypePlugins = [rehypeKatex];
 
 function parseQuiz(raw: string): Quiz | null {
   try {
-    const data = JSON.parse(raw) as Quiz;
-    if (!Array.isArray(data.questions) || !data.questions.length) return null;
+    const data = parseLooseJson<Quiz>(raw);
+    if (!data || !Array.isArray(data.questions) || !data.questions.length) return null;
     const questions = data.questions.filter(
       (q) => typeof q.q === "string" && Array.isArray(q.options) && q.options.length >= 2 && Number.isInteger(q.answer),
     );

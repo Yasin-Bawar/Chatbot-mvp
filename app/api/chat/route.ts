@@ -115,7 +115,7 @@ export async function POST(req: Request) {
       };
       try {
         if (isMockMode()) {
-          await runMockChat(send, abort.signal);
+          await runMockChat(send, abort.signal, body.messages[body.messages.length - 1]?.text ?? "");
         } else if (!hasApiKey()) {
           send({ t: "error", message: "کلید API (ANTHROPIC_API_KEY) تنظیم نشده است. فایل ‎.env.local‎ را ببینید." });
         } else {

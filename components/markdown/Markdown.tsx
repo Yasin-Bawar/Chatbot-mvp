@@ -11,6 +11,7 @@ import remarkMath from "remark-math";
 import { normalizeDisplayMath, repairMarkdown } from "@/lib/markdown-repair";
 import { textDirection } from "@/lib/persian";
 import { cn } from "@/lib/utils";
+import { Board } from "@/components/board/Board";
 import { CodeBlock } from "./CodeBlock";
 import { hastText } from "./hast";
 import { QuizCard } from "./QuizCard";
@@ -66,6 +67,7 @@ const components: Components = {
     const language = classes.find((c) => c.startsWith("language-"))?.slice(9) ?? "";
     const text = hastText(code).replace(/\n$/, "");
     if (language === "quiz") return <QuizCard raw={text} streaming={streaming} />;
+    if (language === "board") return <Board raw={text} streaming={streaming} />;
     return (
       <CodeBlock language={language} code={text}>
         {renderHighlighted(code)}

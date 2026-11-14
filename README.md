@@ -6,6 +6,10 @@
   <img src="docs/screenshots/home.jpg" alt="Home screen" width="760" />
 </p>
 
+<p align="center">
+  <img src="docs/screenshots/board.jpg" alt="Teacher's board solving an equation step by step" width="620" />
+</p>
+
 ## امکانات / Features
 
 **گفتگو (Chat)**
@@ -17,6 +21,12 @@
   - tips become 💡 callout cards and tables become styled cards;
   - math is typeset with KaTeX;
   - code blocks have a copy button.
+- **Teacher's board** (تخته): for math, physics and chemistry problems, Dana solves the problem on a chalkboard inside the chat, step by step, like a teacher in class.
+  - Equations are written line by line with a moving piece of chalk, and short Dari notes explain each step.
+  - Function graphs and geometry or physics sketches (triangles, angles, circles, force arrows) are drawn stroke by stroke.
+  - The final answer is boxed.
+  - Controls: play/pause, previous/next step, replay, show all, and full screen.
+  - New answers play automatically; answers opened from history show complete and can be replayed.
 - **Interactive quizzes** (آزمونک): tap an answer and see right or wrong instantly, with an explanation and a final score.
 - Chips under the input box: 📎 attach a photo or PDF (photos are compressed for slow internet), 💡 تفکر عمیق (deeper thinking), 📝 آزمونک (quiz mode), 🌐 جستجوی وب (web search).
 - A model picker (دانا پیشرفته / سریع / سبک) and a book picker that limits answers to chosen books.
@@ -48,6 +58,7 @@ chat input ───────────────────────
 - `app/api/chat/route.ts` runs a streaming tool-use loop (`client.beta.messages.stream`) with adaptive thinking, prompt caching and **server-side refusal fallback** (`fallbacks: "default"`), then streams events to the browser.
 - `lib/prompts/teacher.ts` holds the teacher persona and the formatting rules the UI relies on.
 - `lib/pdf/quality.ts` holds the page-quality heuristics; `lib/persian.ts` handles Farsi normalization and tokenization.
+- The board is a ```` ```board ```` block in Claude's answer with one JSON object per line (`title`, `step`, `math`, `text`, `graph`, `draw`, `answer`), so steps appear while the answer streams. `lib/board/parse.ts` parses it, tolerating LaTeX backslashes the model forgot to escape. `lib/board/expr.ts` is a small safe expression compiler for graphs (no `eval`), and `components/board/` renders the chalkboard.
 - The PDF is processed in the browser because Vercel functions accept at most a 4.5 MB request body.
 
 ## اجرا روی کمپیوتر / Run locally
@@ -62,7 +73,7 @@ npm run dev
 
 Open http://localhost:3000. Without `DATABASE_URL`, books are stored in an embedded database in `./.data`.
 
-To try the UI without an API key, set `MOCK_AI=1` in `.env.local`.
+To try the UI without an API key, set `MOCK_AI=1` in `.env.local`. Demo answers depend on the question: ask about an equation, Newton's second law or a right triangle to see the board.
 
 ## نشر روی Vercel / Deploy on Vercel
 
@@ -86,7 +97,7 @@ The chat and page-reading routes can run for up to 300 seconds, the Hobby plan l
 ## Development
 
 ```bash
-npm run test        # unit tests (vitest): Farsi text, PDF page checks, search, streaming helpers
+npm run test        # unit tests (vitest): Farsi text, PDF page checks, search, board parser, graph expressions
 npm run lint
 npm run typecheck
 npm run build

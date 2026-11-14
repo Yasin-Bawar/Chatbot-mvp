@@ -485,3 +485,349 @@ button:disabled {
   from { opacity: 0; transform: translateY(-4px) scale(0.98); }
   to { opacity: 1; transform: translateY(0) scale(1); }
 }
+
+/* ======================================================================
+   The teacher's chalkboard (تخته)
+   ====================================================================== */
+.board-root {
+  margin: 0.25em 0;
+}
+
+.board-frame {
+  position: relative;
+  border-radius: 22px;
+  padding: 9px 9px 0;
+  background:
+    linear-gradient(90deg, rgba(0, 0, 0, 0.12), transparent 12%, transparent 88%, rgba(0, 0, 0, 0.12)),
+    repeating-linear-gradient(92deg, rgba(255, 255, 255, 0.05) 0 2px, transparent 2px 9px),
+    linear-gradient(160deg, #a7754a, #835a33 45%, #9c6b40 75%, #6f4826);
+  box-shadow:
+    0 14px 34px rgba(31, 35, 48, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.25);
+}
+
+.board-frame-expanded {
+  display: flex;
+  height: 100%;
+  flex-direction: column;
+}
+
+.board-surface {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  flex: 1;
+  border-radius: 14px 14px 6px 6px;
+  color: #f4f1e8;
+  overflow: hidden;
+  background:
+    radial-gradient(60% 50% at 18% 12%, rgba(255, 255, 255, 0.07), transparent 70%),
+    radial-gradient(45% 40% at 85% 80%, rgba(255, 255, 255, 0.05), transparent 70%),
+    radial-gradient(30% 20% at 60% 30%, rgba(255, 255, 255, 0.035), transparent 70%),
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='220' height='220'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 0.09 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>"),
+    linear-gradient(165deg, #284a3f 0%, #1f3d34 55%, #1a342c 100%);
+  box-shadow:
+    inset 0 0 0 2px rgba(0, 0, 0, 0.25),
+    inset 0 10px 30px rgba(0, 0, 0, 0.25);
+}
+
+.board-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px 0;
+}
+
+.board-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: rgba(244, 241, 232, 0.7);
+}
+
+.board-chip-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 99px;
+  background: #fde68a;
+  box-shadow: 0 0 10px rgba(253, 230, 138, 0.8);
+}
+
+.board-counter {
+  font-size: 12px;
+  color: rgba(244, 241, 232, 0.6);
+}
+
+.board-content {
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 10px 18px 18px;
+  scrollbar-color: rgba(244, 241, 232, 0.25) transparent;
+}
+
+.board-content-inline {
+  max-height: min(72vh, 680px);
+}
+
+.board-content-expanded {
+  flex: 1;
+  min-height: 0;
+  padding: 16px clamp(18px, 4vw, 48px) 24px;
+}
+
+.board-content-expanded .board-math { font-size: 26px; }
+.board-content-expanded .board-title { font-size: 24px; }
+
+/* chalk look */
+.board-surface .chalk-math,
+.board-title,
+.board-heading,
+.board-text,
+.board-note {
+  text-shadow:
+    0 0 1px rgba(255, 255, 255, 0.55),
+    0 0 8px rgba(255, 255, 255, 0.12);
+}
+
+.board-surface .katex {
+  color: inherit;
+}
+
+.board-title {
+  font-size: 19px;
+  font-weight: 800;
+  color: #fff8e1;
+  padding-bottom: 4px;
+  background: linear-gradient(90deg, transparent, rgba(253, 230, 138, 0.75) 15%, rgba(253, 230, 138, 0.75) 85%, transparent) bottom / 100% 2px no-repeat;
+}
+
+.board-heading {
+  font-size: 16px;
+  font-weight: 700;
+  color: #fde68a;
+  line-height: 1.9;
+}
+
+.board-text {
+  font-size: 15.5px;
+  line-height: 2;
+  color: #f4f1e8;
+}
+
+.board-math {
+  font-size: 21px;
+  line-height: 1.7;
+  padding: 2px 6px;
+}
+
+.board-note {
+  font-size: 14px;
+  line-height: 1.9;
+  color: #fde68a;
+  opacity: 0.95;
+}
+
+.board-scroll {
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+}
+
+.board-answer {
+  position: relative;
+  display: inline-flex;
+  max-width: 100%;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  margin-top: 6px;
+  padding: 14px 22px 10px;
+  border: 2.5px solid rgba(134, 239, 172, 0.85);
+  border-radius: 18px 12px 20px 10px;
+  box-shadow:
+    0 0 0 5px rgba(134, 239, 172, 0.1),
+    inset 0 0 18px rgba(134, 239, 172, 0.08);
+  color: #fff;
+}
+
+.board-answer-label {
+  position: absolute;
+  top: -13px;
+  inset-inline-start: 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 8px;
+  border-radius: 99px;
+  font-size: 13px;
+  font-weight: 800;
+  color: #1a342c;
+  background: #86efac;
+}
+
+.board-tray {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  height: 18px;
+  padding: 0 18px 4px;
+  margin: 0 -9px;
+  background: linear-gradient(180deg, #6f4826, #8a5d36 40%, #5d3c1f);
+  box-shadow: inset 0 2px 3px rgba(0, 0, 0, 0.35);
+}
+
+.board-chalk {
+  display: inline-block;
+  width: 34px;
+  height: 7px;
+  border-radius: 3px;
+  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.3);
+}
+.board-chalk-short { width: 22px; }
+.board-chalk-tiny { width: 14px; }
+
+.board-eraser {
+  margin-inline-start: auto;
+  display: inline-block;
+  width: 44px;
+  height: 12px;
+  border-radius: 3px;
+  background: linear-gradient(180deg, #e9e2d0 0 35%, #4b3a2a 35%);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+}
+
+.board-placeholder {
+  display: grid;
+  place-items: center;
+  height: 120px;
+  border-radius: 22px;
+  border: 2px dashed var(--border-strong);
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.board-ctrl {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  place-items: center;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-2);
+  box-shadow: var(--shadow-sm);
+  transition: all 0.15s ease;
+}
+.board-ctrl:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--primary) 35%, transparent);
+  color: var(--primary);
+}
+.board-ctrl:disabled {
+  opacity: 0.4;
+}
+
+.board-wait-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 99px;
+  background: #f4f1e8;
+  opacity: 0.3;
+  animation: board-wait 1s ease-in-out infinite;
+}
+
+@keyframes board-wait {
+  0%, 100% { opacity: 0.25; transform: translateY(0); }
+  50% { opacity: 0.9; transform: translateY(-3px); }
+}
+
+/* writing animations */
+.wipe-ltr,
+.wipe-rtl {
+  animation-duration: var(--dur, 1s);
+  animation-delay: var(--delay, 0s);
+  animation-timing-function: cubic-bezier(0.45, 0.05, 0.4, 0.95);
+  animation-fill-mode: both;
+}
+.wipe-ltr { animation-name: wipe-ltr; }
+.wipe-rtl { animation-name: wipe-rtl; }
+
+@keyframes wipe-ltr {
+  from { clip-path: inset(-30% 100% -30% 0); }
+  to { clip-path: inset(-30% 0 -30% 0); }
+}
+@keyframes wipe-rtl {
+  from { clip-path: inset(-30% 0 -30% 100%); }
+  to { clip-path: inset(-30% 0 -30% 0); }
+}
+
+.chalk-piece {
+  position: absolute;
+  top: 50%;
+  width: 18px;
+  height: 7px;
+  margin-top: -2px;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #ffffff, #e8e4d8);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.45), 0 0 10px rgba(255, 255, 255, 0.35);
+  transform: rotate(-28deg);
+  opacity: 0;
+  pointer-events: none;
+}
+.chalk-move-ltr {
+  animation:
+    chalk-move-ltr var(--dur, 1s) cubic-bezier(0.45, 0.05, 0.4, 0.95) var(--delay, 0s) both,
+    chalk-wiggle 0.22s ease-in-out var(--delay, 0s) infinite;
+}
+.chalk-move-rtl {
+  animation:
+    chalk-move-rtl var(--dur, 1s) cubic-bezier(0.45, 0.05, 0.4, 0.95) var(--delay, 0s) both,
+    chalk-wiggle 0.22s ease-in-out var(--delay, 0s) infinite;
+}
+
+/* Hidden during its start delay (fill-mode "both" applies the 0% frame), visible while writing. */
+@keyframes chalk-move-ltr {
+  0% { left: 0; opacity: 0; }
+  4% { opacity: 1; }
+  92% { opacity: 1; }
+  100% { left: 100%; opacity: 0; }
+}
+@keyframes chalk-move-rtl {
+  0% { right: 0; opacity: 0; }
+  4% { opacity: 1; }
+  92% { opacity: 1; }
+  100% { right: 100%; opacity: 0; }
+}
+@keyframes chalk-wiggle {
+  0%, 100% { margin-top: -2px; }
+  50% { margin-top: -6px; }
+}
+
+/* SVG strokes drawn like chalk lines */
+.chalk-stroke {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: chalk-draw var(--draw, 0.6s) ease-in-out var(--delay, 0s) forwards;
+}
+@keyframes chalk-draw {
+  to { stroke-dashoffset: 0; }
+}
+
+.chalk-pop {
+  opacity: 0;
+  animation: chalk-pop 0.35s ease-out var(--delay, 0s) forwards;
+}
+@keyframes chalk-pop {
+  from { opacity: 0; transform: scale(0.96); }
+  to { opacity: 1; transform: scale(1); }
+}
+svg .chalk-pop { transform-box: fill-box; transform-origin: center; }
+
+@media (max-width: 640px) {
+  .board-content { padding: 8px 12px 14px; }
+  .board-math { font-size: 18px; }
+  .board-title { font-size: 17px; }
+}

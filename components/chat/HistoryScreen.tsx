@@ -76,7 +76,11 @@ export function HistoryScreen() {
                         >
                           <div className="truncate font-semibold">{chat.title}</div>
                           <div className="truncate text-xs text-muted">
-                            {toFaDigits(chat.messages.length)} پیام · {preview.replace(/[#*>`$|]/g, "").slice(0, 80)}
+                            {toFaDigits(chat.messages.length)} پیام ·{" "}
+                            {preview
+                              .replace(/```[\s\S]*?(```|$)/g, " ")
+                              .replace(/[#*>`$|]/g, "")
+                              .slice(0, 80)}
                           </div>
                         </button>
                         <button
