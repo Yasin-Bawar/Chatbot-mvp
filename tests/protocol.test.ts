@@ -39,6 +39,7 @@ describe("buildChatPayload", () => {
     bookIds: ["b1"],
     studentName: "مریم",
     askedName: true,
+    boardSpeed: "normal",
   };
 
   it("keeps new attachments and replaces old ones over budget with a note", () => {

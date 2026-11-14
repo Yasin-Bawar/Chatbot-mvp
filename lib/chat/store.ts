@@ -87,6 +87,7 @@ const DEFAULT_SETTINGS: Settings = {
   bookIds: [],
   studentName: "",
   askedName: false,
+  boardSpeed: "normal",
 };
 
 function touch(chat: Chat, messages: ChatMessage[]): Chat {

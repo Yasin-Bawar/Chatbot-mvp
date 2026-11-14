@@ -2,6 +2,7 @@
 
 import { memo, useId, useMemo, type CSSProperties } from "react";
 import { compileExpr, niceStep } from "@/lib/board/expr";
+import { T } from "@/lib/board/timing";
 import type { ChalkColor, GraphSpec } from "@/lib/board/types";
 import { CHALK, ChalkMath } from "./Chalk";
 
@@ -21,10 +22,13 @@ export const BoardGraph = memo(function BoardGraph({
   spec,
   animate,
   delay = 0,
+  k = 1,
 }: {
   spec: GraphSpec;
   animate: boolean;
   delay?: number;
+  /** Time scale (board speed). */
+  k?: number;
 }) {
   const uid = useId().replace(/:/g, "");
 
@@ -97,10 +101,11 @@ export const BoardGraph = memo(function BoardGraph({
   }, [spec]);
 
   const strokeStyle = (d: number, dur: number) =>
-    (animate ? { "--delay": `${delay + d}s`, "--draw": `${dur}s` } : undefined) as CSSProperties | undefined;
+    (animate ? { "--delay": `${(delay + d) * k}s`, "--draw": `${dur * k}s` } : undefined) as CSSProperties | undefined;
   const strokeClass = animate ? "chalk-stroke" : undefined;
   const popClass = animate ? "chalk-pop" : undefined;
-  const curvesStart = 0.7;
+  const curvesStart = T.graphAxes;
+  const axis = T.graphAxes * 0.45;
 
   return (
     <div className="w-full">
@@ -116,7 +121,7 @@ export const BoardGraph = memo(function BoardGraph({
         </defs>
 
         {/* faint grid */}
-        <g stroke="rgba(244,241,232,0.08)" strokeWidth="1" className={popClass} style={strokeStyle(0, 0.4)}>
+        <g stroke="rgba(244,241,232,0.08)" strokeWidth="1" className={popClass} style={strokeStyle(0, axis)}>
           {model.xTicks.map((v) => (
             <line key={`gx${v}`} x1={model.sx(v)} x2={model.sx(v)} y1={PAD.t} y2={H - PAD.b} />
           ))}
@@ -127,14 +132,14 @@ export const BoardGraph = memo(function BoardGraph({
 
         {/* axes */}
         <g filter={`url(#${uid}-chalk)`} stroke={CHALK.white} strokeWidth="2" strokeLinecap="round" fill="none" opacity="0.9">
-          <path pathLength={1} className={strokeClass} style={strokeStyle(0, 0.5)} d={`M${PAD.l - 6},${model.axisY}L${W - PAD.r + 4},${model.axisY}`} />
-          <path pathLength={1} className={strokeClass} style={strokeStyle(0.15, 0.5)} d={`M${model.axisX},${H - PAD.b + 6}L${model.axisX},${PAD.t - 6}`} />
-          <path className={popClass} style={strokeStyle(0.5, 0.3)} d={`M${W - PAD.r - 4},${model.axisY - 5}L${W - PAD.r + 4},${model.axisY}L${W - PAD.r - 4},${model.axisY + 5}`} />
-          <path className={popClass} style={strokeStyle(0.6, 0.3)} d={`M${model.axisX - 5},${PAD.t + 2}L${model.axisX},${PAD.t - 6}L${model.axisX + 5},${PAD.t + 2}`} />
+          <path pathLength={1} className={strokeClass} style={strokeStyle(0, axis)} d={`M${PAD.l - 6},${model.axisY}L${W - PAD.r + 4},${model.axisY}`} />
+          <path pathLength={1} className={strokeClass} style={strokeStyle(axis * 0.4, axis)} d={`M${model.axisX},${H - PAD.b + 6}L${model.axisX},${PAD.t - 6}`} />
+          <path className={popClass} style={strokeStyle(axis, 0.3)} d={`M${W - PAD.r - 4},${model.axisY - 5}L${W - PAD.r + 4},${model.axisY}L${W - PAD.r - 4},${model.axisY + 5}`} />
+          <path className={popClass} style={strokeStyle(axis * 1.4, 0.3)} d={`M${model.axisX - 5},${PAD.t + 2}L${model.axisX},${PAD.t - 6}L${model.axisX + 5},${PAD.t + 2}`} />
         </g>
 
         {/* tick labels */}
-        <g fill="rgba(244,241,232,0.55)" fontSize="11" className={popClass} style={strokeStyle(0.4, 0.3)} direction="ltr">
+        <g fill="rgba(244,241,232,0.55)" fontSize="11" className={popClass} style={strokeStyle(axis * 1.6, 0.3)} direction="ltr">
           {model.xTicks.map((v) =>
             Math.abs(v) < 1e-9 ? null : (
               <text key={`tx${v}`} x={model.sx(v)} y={Math.min(H - 6, model.axisY + 16)} textAnchor="middle">
@@ -167,7 +172,7 @@ export const BoardGraph = memo(function BoardGraph({
                 pathLength={1}
                 stroke={CHALK[CURVE_COLORS[i % CURVE_COLORS.length]]}
                 className={strokeClass}
-                style={strokeStyle(curvesStart + i * 1.2, 1.2)}
+                style={strokeStyle(curvesStart + i * T.graphCurve, T.graphCurve)}
               />
             ) : null,
           )}
@@ -178,7 +183,7 @@ export const BoardGraph = memo(function BoardGraph({
           const x = model.sx(p[0]);
           const y = model.sy(p[1]);
           const label = p[2] ?? `(${fmt(p[0])}, ${fmt(p[1])})`;
-          const t = curvesStart + Math.max(1, model.paths.length) * 1.2 + i * 0.15;
+          const t = curvesStart + Math.max(1, model.paths.length) * T.graphCurve + i * 0.25;
           return (
             <g key={i} className={popClass} style={strokeStyle(t, 0.3)}>
               <circle cx={x} cy={y} r="5" fill={CHALK.pink} stroke="#1b352d" strokeWidth="1.5" />

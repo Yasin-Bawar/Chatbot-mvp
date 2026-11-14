@@ -1,3 +1,4 @@
+import type { BoardSpeed } from "@/lib/board/timing";
 import type { ChatAttachment, SourceRef } from "@/lib/stream-protocol";
 
 export interface ToolStatus {
@@ -40,4 +41,6 @@ export interface Settings {
   bookIds: string[];
   studentName: string;
   askedName: boolean;
+  /** Writing speed of the teacher's board. */
+  boardSpeed: BoardSpeed;
 }

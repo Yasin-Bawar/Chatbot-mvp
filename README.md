@@ -25,8 +25,9 @@
   - Equations are written line by line with a moving piece of chalk, and short Dari notes explain each step.
   - Function graphs and geometry or physics sketches (triangles, angles, circles, force arrows) are drawn stroke by stroke.
   - The final answer is boxed.
-  - Controls: play/pause, previous/next step, replay, show all, and full screen.
-  - New answers play automatically; answers opened from history show complete and can be replayed.
+  - A new board **opens full screen by itself** and is written slowly, step by step. A big control bar suits phones: play/pause, previous/next, replay, show all, and a **speed** button (آهسته / عادی / تیز, remembered on the device).
+  - In the chat, the board stays as a compact card: tap it to open full screen again. Answers opened from history show complete and can be replayed.
+  - Keyboard in full screen: Space play/pause, ← next, → previous, Esc close.
 - **Interactive quizzes** (آزمونک): tap an answer and see right or wrong instantly, with an explanation and a final score.
 - Chips under the input box: 📎 attach a photo or PDF (photos are compressed for slow internet), 💡 تفکر عمیق (deeper thinking), 📝 آزمونک (quiz mode), 🌐 جستجوی وب (web search).
 - A model picker (دانا پیشرفته / سریع / سبک) and a book picker that limits answers to chosen books.

@@ -1,7 +1,7 @@
 "use client";
 
 import { memo, useId, useMemo, type CSSProperties, type ReactNode } from "react";
-import { DRAW_ITEM_SECONDS } from "@/lib/board/timing";
+import { T } from "@/lib/board/timing";
 import type { ChalkColor, DrawItem, Vec } from "@/lib/board/types";
 import { textDirection } from "@/lib/persian";
 import { CHALK, ChalkText } from "./Chalk";
@@ -84,11 +84,14 @@ export const BoardDrawing = memo(function BoardDrawing({
   grid,
   animate,
   delay = 0,
+  k = 1,
 }: {
   items: DrawItem[];
   grid?: boolean;
   animate: boolean;
   delay?: number;
+  /** Time scale (board speed). */
+  k?: number;
 }) {
   const uid = useId().replace(/:/g, "");
 
@@ -116,7 +119,7 @@ export const BoardDrawing = memo(function BoardDrawing({
   }, [items]);
 
   const timing = (i: number, extra = 0) =>
-    (animate ? { "--delay": `${delay + i * DRAW_ITEM_SECONDS + extra}s`, "--draw": `${DRAW_ITEM_SECONDS}s` } : undefined) as
+    (animate ? { "--delay": `${(delay + i * T.drawItem + extra) * k}s`, "--draw": `${T.drawItem * k}s` } : undefined) as
       | CSSProperties
       | undefined;
   const stroke = animate ? "chalk-stroke" : undefined;
