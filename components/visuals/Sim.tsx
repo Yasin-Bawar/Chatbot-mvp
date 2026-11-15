@@ -2,10 +2,8 @@
 
 import { Pause, Play, RotateCcw } from "lucide-react";
 import { useMemo, useState } from "react";
-import { GRAVITY_PRESETS, initialParams, SIM_PARAMS, temperatureRange, type ParamDef } from "@/lib/visuals/physics";
+import { GRAVITY_PRESETS, initialParams, SIM_PARAMS, temperatureRange, USES_GRAVITY, type ParamDef } from "@/lib/visuals/physics";
 import type { SimSpec, SimType } from "@/lib/visuals/types";
-import { cn } from "@/lib/utils";
-import { Markdown } from "@/components/markdown/Markdown";
 import { fmt } from "./format";
 import { CircuitCanvas, circuitReadouts } from "./sims/Circuit";
 import { InclineCanvas, inclineReadouts } from "./sims/Incline";
@@ -55,17 +53,7 @@ function Slider({ def, value, onChange }: { def: ParamDef; value: number; onChan
   const decimals = def.step < 0.1 ? 2 : def.step < 1 ? 1 : 0;
   return (
     <label className="sim-slider">
-      <span className="flex items-baseline justify-between gap-2">
-        <span className="text-[13px] font-semibold opacity-85">{def.label}</span>
-        <span className="sim-value">
-          {fmt(value, decimals)}
-          {def.unit && (
-            <span className="ms-1 text-[11px] opacity-70">
-              <bdi dir="ltr">{def.unit}</bdi>
-            </span>
-          )}
-        </span>
-      </span>
+      <span className="sim-slider-label">{def.label}</span>
       <input
         type="range"
         min={def.min}
@@ -75,11 +63,19 @@ function Slider({ def, value, onChange }: { def: ParamDef; value: number; onChan
         onChange={(e) => onChange(Number(e.target.value))}
         aria-label={def.label}
       />
+      <span className="sim-value">
+        {fmt(value, decimals)}
+        {def.unit && (
+          <small>
+            <bdi dir="ltr">{def.unit}</bdi>
+          </small>
+        )}
+      </span>
     </label>
   );
 }
 
-export default function Sim({ spec }: { spec: SimSpec }) {
+export default function Sim({ spec, accent }: { spec: SimSpec; accent: string }) {
   const defs = useMemo(() => paramDefs(spec), [spec]);
   const [p, setP] = useState(() => {
     const base = initialParams(spec.type, spec.params);
@@ -93,19 +89,36 @@ export default function Sim({ spec }: { spec: SimSpec }) {
   const [playing, setPlaying] = useState(true);
   const [run, setRun] = useState(0);
   const Canvas = CANVAS[spec.type];
-  const hasGravity = defs.some((d) => d.key === "g");
+  const hasGravity = USES_GRAVITY.includes(spec.type);
 
   return (
     <div className="sim-layout">
       <div className="sim-canvas">
-        <Canvas p={p} playing={playing} run={run} substance={spec.substance} />
+        <Canvas p={p} playing={playing} run={run} accent={accent} substance={spec.substance} />
       </div>
 
       <div className="sim-panel">
-        <div className="flex gap-2">
-          <button type="button" onClick={() => setPlaying((x) => !x)} className="sim-btn sim-btn-primary">
-            {playing ? <Pause className="size-4 fill-current" /> : <Play className="size-4 fill-current" />}
-            {playing ? "توقف" : "ادامه"}
+        <div className="sim-top">
+          <div className="sim-stats">
+            {readouts(spec, p).map((r) => (
+              <span key={r.label} className="sim-stat" data-tone={r.tone}>
+                {r.label}
+                <b>{r.value}</b>
+                {r.unit && (
+                  <small>
+                    <bdi dir="ltr">{r.unit}</bdi>
+                  </small>
+                )}
+              </span>
+            ))}
+          </div>
+          <button
+            type="button"
+            onClick={() => setPlaying((x) => !x)}
+            className="visual-icon-btn visual-icon-btn-primary"
+            aria-label={playing ? "توقف" : "ادامه"}
+          >
+            {playing ? <Pause className="fill-current" /> : <Play className="fill-current" />}
           </button>
           <button
             type="button"
@@ -113,54 +126,32 @@ export default function Sim({ spec }: { spec: SimSpec }) {
               setRun((r) => r + 1);
               setPlaying(true);
             }}
-            className="sim-btn"
+            className="visual-icon-btn"
+            aria-label="از نو"
           >
-            <RotateCcw className="size-4" /> از نو
+            <RotateCcw />
           </button>
         </div>
 
-        <div className="grid gap-3">
-          {defs.map((def) => (
-            <Slider key={def.key} def={def} value={p[def.key]} onChange={(v) => setP((prev) => ({ ...prev, [def.key]: v }))} />
-          ))}
-        </div>
+        {defs.map((def) => (
+          <Slider key={def.key} def={def} value={p[def.key]} onChange={(v) => setP((prev) => ({ ...prev, [def.key]: v }))} />
+        ))}
 
         {hasGravity && (
-          <div className="flex flex-wrap gap-1.5">
+          <div className="sim-segmented" role="group" aria-label="جاذبه">
             {GRAVITY_PRESETS.map((g) => (
               <button
                 key={g.label}
                 type="button"
                 onClick={() => setP((prev) => ({ ...prev, g: g.g }))}
-                className="sim-chip"
                 data-active={Math.abs(p.g - g.g) < 0.05 ? "true" : undefined}
+                aria-pressed={Math.abs(p.g - g.g) < 0.05}
               >
-                {g.label} {fmt(g.g)}
+                {g.label}
               </button>
             ))}
           </div>
         )}
-
-        <div className="sim-readouts">
-          {readouts(spec, p).map((r) => (
-            <div key={r.label} className={cn("sim-readout", r.tone && `sim-readout-${r.tone}`)}>
-              <div className="text-[11.5px] opacity-75">{r.label}</div>
-              <div className="sim-readout-value">
-                {r.value}
-                {r.unit && (
-                  <span className="ms-1 text-[12px] font-semibold opacity-70">
-                    <bdi dir="ltr">{r.unit}</bdi>
-                  </span>
-                )}
-              </div>
-              {r.tex && (
-                <div className="sim-tex" dir="ltr">
-                  <Markdown text={`$${r.tex}$`} />
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
       </div>
     </div>
   );

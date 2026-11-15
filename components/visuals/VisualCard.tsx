@@ -7,10 +7,11 @@ import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useOverlays } from "@/lib/overlays";
-import { findPreset } from "@/lib/visuals/molecules";
+import { findPreset, formulaOf } from "@/lib/visuals/molecules";
 import { parseVisual } from "@/lib/visuals/parse";
 import type { VisualKind, VisualSpec } from "@/lib/visuals/types";
 import { Markdown } from "@/components/markdown/Markdown";
+import { visualTheme } from "./theme";
 
 const Loading = () => (
   <div className="grid h-full place-items-center">
@@ -23,26 +24,14 @@ const Globe = dynamic(() => import("./Globe"), { ssr: false, loading: Loading })
 const Molecule = dynamic(() => import("./Molecule"), { ssr: false, loading: Loading });
 const Sim = dynamic(() => import("./Sim"), { ssr: false, loading: Loading });
 
-function describe(spec: VisualSpec): { kind: string; icon: React.ReactNode; tone: string; note?: string } {
-  if (spec.kind === "globe") {
-    return { kind: "کره زمین سه‌بعدی", icon: <Earth className="size-6" />, tone: "visual-tone-globe", note: spec.note };
-  }
+function describe(spec: VisualSpec): { icon: React.ReactNode; note?: string; subtitle?: string } {
+  if (spec.kind === "globe") return { icon: <Earth />, note: spec.note };
   if (spec.kind === "molecule") {
-    return {
-      kind: "مولکول سه‌بعدی",
-      icon: <Atom className="size-6" />,
-      tone: "visual-tone-molecule",
-      note: spec.note ?? findPreset(spec.preset ?? spec.title)?.note,
-    };
+    const preset = findPreset(spec.preset ?? spec.title);
+    const formula = spec.formula || preset?.formula || (spec.atoms.length ? formulaOf(spec.atoms) : "");
+    return { icon: <Atom />, note: spec.note ?? preset?.note, subtitle: formula ? `$\\mathrm{${formula}}$` : undefined };
   }
-  return spec.type === "states"
-    ? {
-        kind: "آزمایش کیمیا · حالت‌های ماده",
-        icon: <FlaskConical className="size-6" />,
-        tone: "visual-tone-states",
-        note: spec.note,
-      }
-    : { kind: "آزمایش فزیک", icon: <Orbit className="size-6" />, tone: "visual-tone-sim", note: spec.note };
+  return { icon: spec.type === "states" ? <FlaskConical /> : <Orbit />, note: spec.note };
 }
 
 function titleOf(spec: VisualSpec): string {
@@ -93,19 +82,20 @@ export function VisualCard({ lang, raw, streaming }: { lang: VisualKind; raw: st
   if (!spec) {
     return (
       <div className="visual-card not-prose" aria-busy={streaming}>
-        <span className="visual-card-icon visual-tone-globe">
-          <LoaderCircle className="size-6 animate-spin" />
+        <span className="visual-card-icon">
+          <LoaderCircle className="animate-spin" />
         </span>
-        <div className="min-w-0 flex-1">
-          <div className="text-[15px] font-bold">{streaming ? "دانا نمایش را آماده می‌کند…" : "این نمایش آماده نشد"}</div>
-          <div className="text-xs text-muted">{streaming ? "چند لحظه صبر کنید" : "از دانا بخواهید دوباره بفرستد."}</div>
-        </div>
+        <span className="min-w-0 flex-1 text-[14.5px] font-semibold text-muted">
+          {streaming ? "در حال آماده شدن…" : "این نمایش آماده نشد"}
+        </span>
       </div>
     );
   }
 
   const info = describe(spec);
+  const theme = visualTheme(spec);
   const title = titleOf(spec);
+  const accentStyle = { "--accent": theme.accent, "--accent-soft": theme.accentSoft } as React.CSSProperties;
 
   return (
     <>
@@ -113,17 +103,20 @@ export function VisualCard({ lang, raw, streaming }: { lang: VisualKind; raw: st
         type="button"
         onClick={open}
         className="visual-card not-prose"
-        initial={{ opacity: 0, y: 8 }}
+        style={accentStyle}
+        initial={{ opacity: 0, y: 6 }}
         animate={{ opacity: 1, y: 0 }}
-        whileHover={{ y: -2 }}
+        aria-label={`${title} — نمایش`}
       >
-        <span className={`visual-card-icon ${info.tone}`}>{info.icon}</span>
+        <span className="visual-card-icon">{info.icon}</span>
         <span className="min-w-0 flex-1 text-start">
-          <span className="block text-[11.5px] font-semibold text-primary">{info.kind}</span>
           <span className="block truncate text-[15px] font-bold">{title}</span>
+          <span className="visual-subject">
+            {theme.label} · {theme.kind}
+          </span>
         </span>
-        <span className="visual-card-open">
-          <Maximize2 className="size-4" /> {expanded ? "باز است" : "نمایش"}
+        <span className="visual-card-open" aria-hidden>
+          <Maximize2 />
         </span>
       </motion.button>
 
@@ -137,20 +130,26 @@ export function VisualCard({ lang, raw, streaming }: { lang: VisualKind; raw: st
                 aria-modal="true"
                 aria-label={title}
                 className="visual-overlay"
+                data-theme={theme.dark ? "dark" : "light"}
+                style={accentStyle}
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.25 }}
               >
                 <div className="visual-overlay-header">
-                  <button type="button" onClick={close} className="board-overlay-btn" aria-label="بستن">
-                    <X className="size-5" />
+                  <button type="button" onClick={close} className="visual-icon-btn" aria-label="بستن">
+                    <X />
                   </button>
                   <div className="min-w-0 flex-1 text-center">
-                    <div className="truncate text-[15px] font-bold">{title}</div>
-                    <div className="text-xs opacity-70">{info.kind}</div>
+                    <div className="truncate text-[15.5px] font-bold">{title}</div>
+                    {info.subtitle && (
+                      <div className="visual-header-formula" dir="ltr">
+                        <Markdown text={info.subtitle} />
+                      </div>
+                    )}
                   </div>
-                  <span className={`visual-header-icon ${info.tone}`}>{info.icon}</span>
+                  <span className="visual-subject-chip">{theme.label}</span>
                 </div>
                 <motion.div
                   className="visual-body"
@@ -163,7 +162,7 @@ export function VisualCard({ lang, raw, streaming }: { lang: VisualKind; raw: st
                   ) : spec.kind === "molecule" ? (
                     <Molecule spec={spec} />
                   ) : (
-                    <Sim spec={spec} />
+                    <Sim spec={spec} accent={theme.accent} />
                   )}
                 </motion.div>
                 {info.note && <Note text={info.note} />}

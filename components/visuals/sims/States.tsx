@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef } from "react";
-import { PHASE_FA, phaseAt, temperatureRange, type Phase } from "@/lib/visuals/physics";
+import { PHASE_FA, phaseAt, temperatureRange } from "@/lib/visuals/physics";
 import { fmt } from "../format";
 import { C, grid, text, useAnimatedCanvas } from "./canvas";
 import type { Readout, SimProps } from "./types";
@@ -10,21 +10,10 @@ const COLS = 7;
 const ROWS = 6;
 const N = COLS * ROWS;
 
-const PHASE_COLOR: Record<Phase, string> = { solid: "#60a5fa", liquid: "#22d3ee", gas: "#fb923c" };
-const PHASE_TEXT: Record<Phase, string> = {
-  solid: "ذرات در جای خود می‌لرزند و نظم دارند",
-  liquid: "ذرات نزدیک هم‌اند ولی روی هم می‌لغزند",
-  gas: "ذرات تند و دور از هم حرکت می‌کنند",
-};
-
 export function statesReadouts(p: Record<string, number>, substance: SimProps["substance"]): Readout[] {
   const s = substance ?? { name: "آب", melt: 0, boil: 100 };
   const phase = phaseAt(p.temperature, s.melt, s.boil);
-  return [
-    { label: `حالت ${s.name}`, value: PHASE_FA[phase], tone: "good" },
-    { label: "نقطه ذوب", value: fmt(s.melt, 1), unit: "°C" },
-    { label: "نقطه جوش", value: fmt(s.boil, 1), unit: "°C" },
-  ];
+  return [{ label: s.name, value: PHASE_FA[phase], tone: "accent" }];
 }
 
 interface Particle {
@@ -35,7 +24,7 @@ interface Particle {
   seed: number;
 }
 
-export function StatesCanvas({ p, playing, substance }: SimProps) {
+export function StatesCanvas({ p, playing, substance, accent }: SimProps) {
   const s = substance ?? { name: "آب", melt: 0, boil: 100 };
   const particles = useRef<Particle[] | null>(null);
 
@@ -44,11 +33,11 @@ export function StatesCanvas({ p, playing, substance }: SimProps) {
     const range = temperatureRange(s.melt, s.boil);
 
     grid(ctx, w, h);
-    const thermoW = 104;
+    const thermoW = 96;
     const boxW = Math.min(w - thermoW - 20, 560);
-    const boxH = Math.min(h - 90, 360);
+    const boxH = Math.min(h - 56, 360);
     const bx = (w - thermoW - boxW) / 2 + thermoW;
-    const by = 60;
+    const by = (h - boxH) / 2;
     const r = Math.max(6, Math.min(11, boxW / 40));
 
     // Particles live in box coordinates (0..1).
@@ -142,67 +131,56 @@ export function StatesCanvas({ p, playing, substance }: SimProps) {
       }
     }
 
-    // Box (a glass jar).
-    ctx.save();
-    ctx.fillStyle = "rgba(255,255,255,0.04)";
-    ctx.strokeStyle = "rgba(226,232,240,0.55)";
-    ctx.lineWidth = 3;
+    // The jar.
+    ctx.strokeStyle = C.ink;
+    ctx.lineWidth = 2;
     ctx.beginPath();
-    ctx.roundRect(bx - 6, by - 6, boxW + 12, boxH + 12, 14);
-    ctx.fill();
+    ctx.moveTo(bx - 6, by - 10);
+    ctx.lineTo(bx - 6, by + boxH + 6);
+    ctx.lineTo(bx + boxW + 6, by + boxH + 6);
+    ctx.lineTo(bx + boxW + 6, by - 10);
     ctx.stroke();
-    ctx.restore();
-    const color = PHASE_COLOR[phase];
+
+    // Particles: same colour in every phase; only the motion changes.
+    ctx.fillStyle = accent;
+    ctx.strokeStyle = "rgba(15, 23, 42, 0.35)";
+    ctx.lineWidth = 1;
     for (const q of list) {
-      const x = bx + q.x * boxW;
-      const y = by + q.y * boxH;
-      ctx.save();
-      ctx.shadowColor = color;
-      ctx.shadowBlur = phase === "gas" ? 12 : 6;
-      const g = ctx.createRadialGradient(x - r * 0.35, y - r * 0.35, r * 0.2, x, y, r);
-      g.addColorStop(0, "#ffffff");
-      g.addColorStop(0.35, color);
-      g.addColorStop(1, color);
-      ctx.fillStyle = g;
       ctx.beginPath();
-      ctx.arc(x, y, r, 0, Math.PI * 2);
+      ctx.arc(bx + q.x * boxW, by + q.y * boxH, r, 0, Math.PI * 2);
       ctx.fill();
-      ctx.restore();
+      ctx.stroke();
     }
 
-    // Phase name and description.
-    text(ctx, `${s.name}: ${PHASE_FA[phase]}`, bx + boxW / 2, 22, { size: 18, weight: 800, color });
-    text(ctx, PHASE_TEXT[phase], bx + boxW / 2, by + boxH + 26, { size: 13, color: C.muted });
-
-    // Thermometer.
-    const tx = 34;
+    // Thermometer with the melting and boiling points.
+    const tx = 30;
     const tTop = by;
-    const tBottom = by + boxH - 16;
-    const frac = (p.temperature - range.min) / (range.max - range.min);
-    const level = tBottom - frac * (tBottom - tTop);
-    ctx.fillStyle = "rgba(255,255,255,0.1)";
+    const tBottom = by + boxH - 14;
+    const level = (value: number) => tBottom - ((value - range.min) / (range.max - range.min)) * (tBottom - tTop);
+    ctx.fillStyle = C.ground;
+    ctx.strokeStyle = C.faint;
     ctx.beginPath();
-    ctx.roundRect(tx - 7, tTop - 6, 14, tBottom - tTop + 12, 7);
+    ctx.roundRect(tx - 6, tTop - 4, 12, tBottom - tTop + 8, 6);
     ctx.fill();
-    const hot = Math.min(1, Math.max(0, frac));
-    ctx.fillStyle = `rgb(${Math.round(96 + hot * 152)}, ${Math.round(165 - hot * 52)}, ${Math.round(250 - hot * 137)})`;
-    ctx.fillRect(tx - 4, level, 8, tBottom - level + 6);
+    ctx.stroke();
+    ctx.fillStyle = accent;
+    ctx.fillRect(tx - 3, level(p.temperature), 6, tBottom - level(p.temperature) + 4);
     ctx.beginPath();
-    ctx.arc(tx, tBottom + 12, 13, 0, Math.PI * 2);
+    ctx.arc(tx, tBottom + 10, 10, 0, Math.PI * 2);
     ctx.fill();
     for (const [value, label] of [
       [s.melt, "ذوب"],
       [s.boil, "جوش"],
     ] as const) {
-      const y = tBottom - ((value - range.min) / (range.max - range.min)) * (tBottom - tTop);
-      ctx.strokeStyle = "rgba(255,255,255,0.6)";
+      const y = level(value);
+      ctx.strokeStyle = C.muted;
+      ctx.lineWidth = 1;
       ctx.beginPath();
-      ctx.moveTo(tx + 9, y);
-      ctx.lineTo(tx + 17, y);
+      ctx.moveTo(tx + 8, y);
+      ctx.lineTo(tx + 14, y);
       ctx.stroke();
-      text(ctx, `${label} ${fmt(value, 0)}°`, tx + 20, y, { size: 10, color: C.muted, align: "left" });
+      text(ctx, `${label} ${fmt(value, 0)}°`, tx + 17, y, { size: 11, color: C.muted, align: "left", weight: 500 });
     }
-    text(ctx, `${fmt(p.temperature, 0)}°C`, tx, tBottom + 40, { size: 13, weight: 800 });
   });
 
   return <canvas ref={ref} />;

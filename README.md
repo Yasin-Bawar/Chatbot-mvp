@@ -41,10 +41,10 @@
   - The results screen shows the score, time and best streak, with «تمرین اشتباهات» (practice mistakes) and «دوباره» (retry).
   - **«برگشت به دانا و فرستادن نتیجه»** returns to the chat and sends the result as a card; Dana then explains each mistake. Quiz mode switches off so she explains instead of quizzing again.
   - Keyboard: 1–4 choose, Enter checks/continues, Esc exits.
-- **Interactive visuals** that open full screen by themselves once, for a new answer, and stay as a small card in the chat:
+- **Interactive visuals** that open full screen by themselves once, for a new answer, and stay as a small card in the chat. They are kept calm and simple: one colour per subject (geography teal, chemistry green, physics blue), light textbook-style pages, and very little text.
   - **3D Earth** (```` ```globe ````) for geography and history: highlighted countries with Dari names, cities, and routes such as the Silk Road. Drag to turn and pinch to zoom. The map is bundled (Natural Earth 1:110m), so no map images are downloaded.
   - **3D molecules** (```` ```molecule ````): ball-and-stick models with single, double and triple bonds and a Dari legend of the elements. There are 13 built-in molecules (water, CO₂, methane, ammonia, ethanol, benzene, a salt crystal…). Any other molecule is laid out with a small VSEPR model, so water is bent, ammonia is a pyramid and benzene is flat.
-  - **Physics experiments** (```` ```sim ````) with sliders and live formulas: projectile motion (earlier throws stay as faint trails to compare), pendulum, inclined plane with force arrows, an electric circuit with moving electrons and a glowing bulb, and waves. Gravity can be set to Earth, Moon, Mars or Jupiter.
+  - **Physics experiments** (```` ```sim ````) with sliders and live formulas: projectile motion (earlier throws stay as faint trails to compare), pendulum, inclined plane with force arrows, an electric circuit with moving electrons and a glowing bulb, and waves. Gravity can be switched between Earth, Moon and Jupiter.
   - **States of matter** (```` ```sim ```` with `"type": "states"`): particles in a jar change from a vibrating solid to a sliding liquid to a fast gas as the temperature slider passes the melting and boiling points.
 - **Room to read:** answers use the full width; the top bars slide away while scrolling down and come back when scrolling up; and the message box is a single line until it is tapped.
 - Chips under the input box (shown when it is tapped): 📎 attach a photo or PDF (photos are compressed for slow internet), 💡 تفکر عمیق (deeper thinking), 📝 آزمونک (quiz mode), 🌐 جستجوی وب (web search). Small coloured dots show which modes are on.
@@ -105,7 +105,7 @@ To try the UI without an API key, set `MOCK_AI=1` in `.env.local`. Demo answers 
 - an equation, Newton's second law or a right triangle shows the board;
 - «همسایه‌های افغانستان» shows the 3D Earth;
 - «شکل مولکول آب» shows a molecule;
-- «حرکت پرتابی» shows the projectile experiment;
+- «حرکت پرتابی», «رقاصک», «سطح مایل»، «مدار» or «موج» shows an experiment;
 - «ذوب و جوش آب» shows the states of matter.
 
 ## نشر روی Vercel / Deploy on Vercel

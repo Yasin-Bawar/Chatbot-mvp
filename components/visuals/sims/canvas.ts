@@ -4,20 +4,17 @@ import { useEffect, useRef } from "react";
 
 export const FONT = '"Vazirmatn Variable", "Vazirmatn", Tahoma, sans-serif';
 
+/** Light "textbook page" colours. The subject colour comes in as `accent`. */
 export const C = {
-  bg: "#0f1533",
-  grid: "rgba(148,163,255,0.08)",
-  ground: "#2a3366",
-  text: "#e6e9ff",
-  muted: "rgba(230,233,255,0.6)",
-  accent: "#fde047",
-  red: "#f87171",
-  blue: "#60a5fa",
-  green: "#4ade80",
-  orange: "#fb923c",
-  violet: "#a78bfa",
-  pink: "#f472b6",
-  cyan: "#22d3ee",
+  page: "#ffffff",
+  grid: "#eef2f7",
+  ground: "#eef2f7",
+  groundLine: "#94a3b8",
+  ink: "#1e293b",
+  text: "#1e293b",
+  muted: "#64748b",
+  faint: "#cbd5e1",
+  warm: "#d97706",
 };
 
 export type DrawFn = (ctx: CanvasRenderingContext2D, w: number, h: number, dt: number, time: number) => void;
@@ -152,13 +149,15 @@ export function grid(ctx: CanvasRenderingContext2D, w: number, h: number, step =
   ctx.restore();
 }
 
-export function glowCircle(ctx: CanvasRenderingContext2D, x: number, y: number, r: number, color: string, glow = 16) {
+/** A filled circle with a thin ink outline (balls, bobs, particles). */
+export function dot(ctx: CanvasRenderingContext2D, x: number, y: number, r: number, fill: string, outline = C.ink) {
   ctx.save();
-  ctx.shadowColor = color;
-  ctx.shadowBlur = glow;
-  ctx.fillStyle = color;
+  ctx.fillStyle = fill;
+  ctx.strokeStyle = outline;
+  ctx.lineWidth = 1.5;
   ctx.beginPath();
   ctx.arc(x, y, r, 0, Math.PI * 2);
   ctx.fill();
+  ctx.stroke();
   ctx.restore();
 }

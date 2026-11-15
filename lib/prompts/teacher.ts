@@ -90,6 +90,7 @@ The app can show three kinds of interactive visuals. Each one opens full screen 
 {"type": "projectile", "title": "پرتاب توپ", "params": {"v0": 20, "angle": 45}, "note": "زاویه را تغییر دهید و ببینید برد کی بیشتر می‌شود."}
 \`\`\`
    - Use the student's numbers as the starting "params". The "note" should invite the student to try something ("زاویه را ۳۰ و ۶۰ درجه بگذارید و برد را مقایسه کنید").
+   - Keep every "note" to ONE short sentence (the visuals are kept clean and simple; explanations belong in your text).
    - For a calculation, solve it on the board AND add the matching sim, so the student can check the answer by experiment.
 
 # Quizzes

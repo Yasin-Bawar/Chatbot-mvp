@@ -12,8 +12,12 @@ import { VisualError } from "./VisualError";
 
 const TEX_W = 2048;
 const TEX_H = 1024;
-const HIGHLIGHT_COLORS = ["#f59e0b", "#ef4444", "#8b5cf6", "#10b981", "#ec4899", "#06b6d4", "#f97316", "#6366f1"];
-const LAND_COLORS = ["#cfe3b4", "#e8d9b0", "#d6e6c0", "#efe0bb", "#c5dcac", "#e2d2a6", "#d9e4b8"];
+// Calm, map-like colours: one sand tone for land, the geography teal for the
+// main country and a pale teal for the others that are highlighted.
+const OCEAN = "#21476d";
+const LAND = "#f1ead8";
+const MAIN = "#0d9488";
+const OTHER = "#99d8cf";
 const DISTANCE = [0, 3.1, 2.35, 1.8, 1.42];
 
 type CountryFeature = Feature<Polygon | MultiPolygon, { name: string }>;
@@ -58,15 +62,11 @@ function drawMap(countries: CountryFeature[], highlighted: Map<string, string>):
   canvas.height = TEX_H;
   const ctx = canvas.getContext("2d")!;
 
-  const ocean = ctx.createLinearGradient(0, 0, 0, TEX_H);
-  ocean.addColorStop(0, "#0d3a66");
-  ocean.addColorStop(0.5, "#1a64a6");
-  ocean.addColorStop(1, "#0d3a66");
-  ctx.fillStyle = ocean;
+  ctx.fillStyle = OCEAN;
   ctx.fillRect(0, 0, TEX_W, TEX_H);
 
   // Latitude / longitude grid every 15°.
-  ctx.strokeStyle = "rgba(255,255,255,0.09)";
+  ctx.strokeStyle = "rgba(255,255,255,0.05)";
   ctx.lineWidth = 1;
   for (let lon = -180; lon <= 180; lon += 15) {
     ctx.beginPath();
@@ -81,7 +81,7 @@ function drawMap(countries: CountryFeature[], highlighted: Map<string, string>):
     ctx.stroke();
   }
   // Equator.
-  ctx.strokeStyle = "rgba(255,255,255,0.22)";
+  ctx.strokeStyle = "rgba(255,255,255,0.14)";
   ctx.setLineDash([10, 8]);
   ctx.beginPath();
   ctx.moveTo(0, py(0));
@@ -90,7 +90,7 @@ function drawMap(countries: CountryFeature[], highlighted: Map<string, string>):
   ctx.setLineDash([]);
 
   const dim = highlighted.size > 0;
-  const paint = (feature: CountryFeature, index: number, emphasis: boolean) => {
+  const paint = (feature: CountryFeature, emphasis: boolean) => {
     const name = feature.properties.name;
     const color = highlighted.get(name);
     if (emphasis !== Boolean(color)) return;
@@ -106,18 +106,17 @@ function drawMap(countries: CountryFeature[], highlighted: Map<string, string>):
         if (maxX > TEX_W) traceRing(ctx, ring, -TEX_W);
       }
     }
-    if (name === "Antarctica") ctx.fillStyle = "#eef2f7";
-    else ctx.fillStyle = color ?? LAND_COLORS[index % LAND_COLORS.length];
-    ctx.globalAlpha = color || !dim ? 1 : 0.82;
+    ctx.fillStyle = name === "Antarctica" ? "#f1f5f9" : (color ?? LAND);
+    ctx.globalAlpha = color || !dim ? 1 : 0.9;
     ctx.fill("evenodd");
     ctx.globalAlpha = 1;
     ctx.lineJoin = "round";
-    ctx.strokeStyle = color ? "#ffffff" : "rgba(92,72,40,0.5)";
-    ctx.lineWidth = color ? 2.6 : 1.1;
+    ctx.strokeStyle = color ? "#ffffff" : "rgba(60,50,30,0.3)";
+    ctx.lineWidth = color ? 2.2 : 1;
     ctx.stroke();
   };
-  countries.forEach((f, i) => paint(f, i, false));
-  countries.forEach((f, i) => paint(f, i, true));
+  countries.forEach((f) => paint(f, false));
+  countries.forEach((f) => paint(f, true));
   return canvas;
 }
 
@@ -157,7 +156,7 @@ function atmosphere(): THREE.Mesh {
     vertexShader: `varying vec3 vNormal; varying vec3 vView;
       void main() { vNormal = normalize(normalMatrix * normal); vec4 mv = modelViewMatrix * vec4(position, 1.0); vView = normalize(-mv.xyz); gl_Position = projectionMatrix * mv; }`,
     fragmentShader: `varying vec3 vNormal; varying vec3 vView;
-      void main() { float rim = 1.0 - max(dot(vNormal, vView), 0.0); float glow = pow(rim, 2.6); gl_FragColor = vec4(0.45, 0.72, 1.0, 1.0) * glow * 1.2; }`,
+      void main() { float rim = 1.0 - max(dot(vNormal, vView), 0.0); float glow = pow(rim, 2.6); gl_FragColor = vec4(0.55, 0.75, 1.0, 1.0) * glow * 0.45; }`,
     blending: THREE.AdditiveBlending,
     transparent: true,
     depthWrite: false,
@@ -166,7 +165,7 @@ function atmosphere(): THREE.Mesh {
 }
 
 function stars(): THREE.Points {
-  const count = 1400;
+  const count = 600;
   const positions = new Float32Array(count * 3);
   let seed = 11;
   const rand = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
@@ -181,7 +180,7 @@ function stars(): THREE.Points {
   geometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
   return new THREE.Points(
     geometry,
-    new THREE.PointsMaterial({ color: 0xffffff, size: 0.11, transparent: true, opacity: 0.75, depthWrite: false }),
+    new THREE.PointsMaterial({ color: 0xffffff, size: 0.09, transparent: true, opacity: 0.45, depthWrite: false }),
   );
 }
 
@@ -264,14 +263,24 @@ export default function Globe({ spec }: { spec: GlobeSpec }) {
     // Markers: a dot and a pulsing ring, with a label.
     const pulses: THREE.Mesh[] = [];
     spec.markers.forEach((m, i) => {
-      const color = new THREE.Color(m.color ?? "#ef4444");
+      // A dark dot with a white edge reads on sand, teal and sea alike.
+      const color = new THREE.Color(m.color ?? "#1e293b");
       const p = vec(m.lat, m.lon, 1.003);
-      const dot = new THREE.Mesh(new THREE.SphereGeometry(0.011, 16, 12), new THREE.MeshBasicMaterial({ color }));
-      dot.position.copy(p);
+      const edge = new THREE.Mesh(new THREE.SphereGeometry(0.014, 16, 12), new THREE.MeshBasicMaterial({ color: 0xffffff }));
+      edge.position.copy(p);
+      scene.add(edge);
+      const dot = new THREE.Mesh(new THREE.SphereGeometry(0.0095, 16, 12), new THREE.MeshBasicMaterial({ color }));
+      dot.position.copy(vec(m.lat, m.lon, 1.0075));
       scene.add(dot);
       const ring = new THREE.Mesh(
-        new THREE.RingGeometry(0.014, 0.019, 32),
-        new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.8, side: THREE.DoubleSide, depthWrite: false }),
+        new THREE.RingGeometry(0.016, 0.02, 32),
+        new THREE.MeshBasicMaterial({
+          color: 0xffffff,
+          transparent: true,
+          opacity: 0.8,
+          side: THREE.DoubleSide,
+          depthWrite: false,
+        }),
       );
       ring.position.copy(vec(m.lat, m.lon, 1.004));
       ring.lookAt(p.clone().multiplyScalar(2));
@@ -291,7 +300,7 @@ export default function Globe({ spec }: { spec: GlobeSpec }) {
     // Routes: glowing arcs with a travelling light.
     const travellers: { mesh: THREE.Mesh; curve: THREE.CatmullRomCurve3; offset: number }[] = [];
     spec.routes.forEach((route, i) => {
-      const color = new THREE.Color(route.color ?? "#fde047");
+      const color = new THREE.Color(route.color ?? "#f59e0b");
       const pts: THREE.Vector3[] = [];
       for (let s = 0; s < route.points.length - 1; s++) {
         const arc = greatCircle(route.points[s], route.points[s + 1], 24);
@@ -338,7 +347,7 @@ export default function Globe({ spec }: { spec: GlobeSpec }) {
         spec.highlight.forEach((h, i) => {
           const name = resolveCountry(h.name, names);
           if (!name) return;
-          highlighted.set(name, h.color ?? HIGHLIGHT_COLORS[i % HIGHLIGHT_COLORS.length]);
+          highlighted.set(name, h.color ?? (i === 0 ? MAIN : OTHER));
           highlightLabels.push({ name, label: countryLabel(name, h.label) });
         });
 
@@ -381,22 +390,29 @@ export default function Globe({ spec }: { spec: GlobeSpec }) {
   return (
     <div className="relative h-full w-full">
       <div ref={mountRef} className="visual-stage" />
-      {status === "loading" && <div className="visual-loading">در حال آماده کردن کره زمین…</div>}
+      {status === "loading" && <div className="visual-loading">…</div>}
       <div className="visual-tools">
-        <button type="button" onClick={() => flyRef.current?.()} className="visual-tool" aria-label="برگشت به مرکز">
-          <Crosshair className="size-4" /> مرکز
+        <button
+          type="button"
+          onClick={() => flyRef.current?.()}
+          className="visual-icon-btn"
+          aria-label="برگشت به مرکز"
+          title="مرکز"
+        >
+          <Crosshair />
         </button>
         <button
           type="button"
           onClick={() => setLabels((l) => !l)}
-          className="visual-tool"
+          className="visual-icon-btn"
           data-active={labels ? "true" : undefined}
           aria-pressed={labels}
+          aria-label="نام‌ها"
+          title="نام‌ها"
         >
-          <Tags className="size-4" /> نام‌ها
+          <Tags />
         </button>
       </div>
-      <div className="visual-hint">برای چرخاندن بکشید · برای نزدیک شدن دو انگشت را باز کنید</div>
     </div>
   );
 }

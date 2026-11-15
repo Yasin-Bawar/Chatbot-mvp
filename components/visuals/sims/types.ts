@@ -1,10 +1,9 @@
+/** One short result under an experiment, e.g. «برد ۴۰٫۸ m». */
 export interface Readout {
   label: string;
   value: string;
   unit?: string;
-  /** Formula shown under the value (LaTeX). */
-  tex?: string;
-  tone?: "good" | "warn";
+  tone?: "accent" | "warn";
 }
 
 export interface SimProps {
@@ -12,5 +11,7 @@ export interface SimProps {
   playing: boolean;
   /** Changes when the student presses "again". */
   run: number;
+  /** The subject colour (physics blue, chemistry green). */
+  accent: string;
   substance?: { name: string; melt: number; boil: number };
 }

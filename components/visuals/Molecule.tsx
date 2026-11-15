@@ -5,7 +5,6 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import { buildMolecule, elementInfo, type Vec3 } from "@/lib/visuals/molecules";
 import type { MoleculeSpec } from "@/lib/visuals/types";
-import { Markdown } from "@/components/markdown/Markdown";
 import { createStage, NoWebGLError, type Stage } from "./stage";
 import { VisualError } from "./VisualError";
 
@@ -68,14 +67,14 @@ export default function Molecule({ spec }: { spec: MoleculeSpec }) {
     stageRef.current = stage;
     const { scene, camera, controls } = stage;
 
-    scene.add(new THREE.AmbientLight(0xffffff, 0.9));
-    scene.add(new THREE.HemisphereLight(0xdbeafe, 0x1e1b4b, 0.8));
-    const key = new THREE.DirectionalLight(0xffffff, 2.2);
+    // Soft studio light for a light page: ambient + one key light + a weak fill.
+    scene.add(new THREE.AmbientLight(0xffffff, 1.1));
+    const key = new THREE.DirectionalLight(0xffffff, 2);
     key.position.set(-3, 4, 5);
     camera.add(key);
-    const rim = new THREE.DirectionalLight(0xa5b4fc, 1.1);
-    rim.position.set(4, -2, -3);
-    camera.add(rim);
+    const fill = new THREE.DirectionalLight(0xffffff, 0.5);
+    fill.position.set(4, -2, 2);
+    camera.add(fill);
 
     const group = new THREE.Group();
     scene.add(group);
@@ -102,7 +101,7 @@ export default function Molecule({ spec }: { spec: MoleculeSpec }) {
       const ca = elementInfo(molecule.atoms[i].el).color;
       const cb = elementInfo(molecule.atoms[j].el).color;
       if (crystal) {
-        addBond(group, positions[i], positions[j], "#c7d2fe", "#c7d2fe", 0.035, 0.55);
+        addBond(group, positions[i], positions[j], "#94a3b8", "#94a3b8", 0.035, 0.6);
         continue;
       }
       const a = positions[i];
@@ -156,11 +155,9 @@ export default function Molecule({ spec }: { spec: MoleculeSpec }) {
   const elements = [...new Set(molecule.atoms.map((a) => a.el))];
 
   return (
-    <div className="relative h-full w-full">
+    // A soft grey "studio" so white hydrogen atoms still stand out.
+    <div className="relative h-full w-full bg-[#eef1f5]">
       <div ref={mountRef} className="visual-stage" />
-      <div className="visual-formula" dir="ltr">
-        <Markdown text={`$\\mathrm{${molecule.formula}}$`} />
-      </div>
       <div className="visual-legend">
         {elements.map((el) => {
           const info = elementInfo(el);
@@ -174,18 +171,25 @@ export default function Molecule({ spec }: { spec: MoleculeSpec }) {
         })}
       </div>
       <div className="visual-tools">
-        <button type="button" onClick={() => setSpinning((s) => !s)} className="visual-tool" aria-pressed={spinning}>
-          {spinning ? <Pause className="size-4" /> : <Play className="size-4" />} {spinning ? "توقف چرخش" : "چرخش"}
+        <button
+          type="button"
+          onClick={() => setSpinning((s) => !s)}
+          className="visual-icon-btn"
+          aria-pressed={spinning}
+          aria-label={spinning ? "توقف چرخش" : "چرخش"}
+        >
+          {spinning ? <Pause /> : <Play />}
         </button>
         {!molecule.crystal && (
           <button
             type="button"
             onClick={() => setLabels((l) => !l)}
-            className="visual-tool"
+            className="visual-icon-btn"
             data-active={labels ? "true" : undefined}
             aria-pressed={labels}
+            aria-label="نام اتوم‌ها"
           >
-            <Tags className="size-4" /> نام اتوم‌ها
+            <Tags />
           </button>
         )}
       </div>

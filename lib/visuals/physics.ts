@@ -108,35 +108,33 @@ export interface ParamDef {
   value: number;
 }
 
+/** Gravity is a small planet switch instead of a slider (fewer controls). */
 export const GRAVITY_PRESETS = [
   { label: "زمین", g: 9.8 },
   { label: "مهتاب", g: 1.6 },
-  { label: "مریخ", g: 3.7 },
   { label: "مشتری", g: 24.8 },
 ];
 
-const G: ParamDef = { key: "g", label: "جاذبه", unit: "m/s²", min: 1, max: 25, step: 0.1, value: 9.8 };
+/** Experiments that depend on gravity (they get the planet switch). */
+export const USES_GRAVITY: SimType[] = ["projectile", "pendulum", "incline"];
 
 export const SIM_PARAMS: Record<SimType, ParamDef[]> = {
   projectile: [
-    { key: "v0", label: "سرعت اولیه", unit: "m/s", min: 5, max: 50, step: 1, value: 20 },
-    { key: "angle", label: "زاویه پرتاب", unit: "°", min: 5, max: 85, step: 1, value: 45 },
-    { key: "h0", label: "ارتفاع شروع", unit: "m", min: 0, max: 30, step: 1, value: 0 },
-    G,
+    { key: "v0", label: "سرعت", unit: "m/s", min: 5, max: 50, step: 1, value: 20 },
+    { key: "angle", label: "زاویه", unit: "°", min: 5, max: 85, step: 1, value: 45 },
+    { key: "h0", label: "ارتفاع", unit: "m", min: 0, max: 30, step: 1, value: 0 },
   ],
   pendulum: [
     { key: "length", label: "طول ریسمان", unit: "m", min: 0.2, max: 3, step: 0.1, value: 1 },
-    { key: "amplitude", label: "زاویه شروع", unit: "°", min: 5, max: 70, step: 1, value: 20 },
-    G,
+    { key: "amplitude", label: "زاویه", unit: "°", min: 5, max: 70, step: 1, value: 20 },
   ],
   incline: [
     { key: "mass", label: "کتله", unit: "kg", min: 1, max: 20, step: 1, value: 5 },
-    { key: "angle", label: "زاویه سطح", unit: "°", min: 5, max: 60, step: 1, value: 30 },
-    { key: "mu", label: "ضریب اصطکاک", unit: "", min: 0, max: 1, step: 0.05, value: 0.2 },
-    G,
+    { key: "angle", label: "زاویه", unit: "°", min: 5, max: 60, step: 1, value: 30 },
+    { key: "mu", label: "اصطکاک (μ)", unit: "", min: 0, max: 1, step: 0.05, value: 0.2 },
   ],
   circuit: [
-    { key: "voltage", label: "ولتاژ بتری", unit: "V", min: 1, max: 24, step: 0.5, value: 9 },
+    { key: "voltage", label: "ولتاژ", unit: "V", min: 1, max: 24, step: 0.5, value: 9 },
     { key: "resistance", label: "مقاومت", unit: "Ω", min: 1, max: 100, step: 1, value: 10 },
   ],
   wave: [
@@ -162,6 +160,10 @@ export function initialParams(type: SimType, given: Record<string, number> = {})
   for (const def of SIM_PARAMS[type]) {
     const v = given[def.key];
     out[def.key] = typeof v === "number" && Number.isFinite(v) ? Math.min(def.max, Math.max(def.min, v)) : def.value;
+  }
+  if (USES_GRAVITY.includes(type)) {
+    const g = given.g;
+    out.g = typeof g === "number" && Number.isFinite(g) ? Math.min(30, Math.max(0.5, g)) : 9.8;
   }
   return out;
 }

@@ -126,7 +126,7 @@ const REVIEW_ANSWER = `آفرین برای تلاش شما! 👏 آزمونک ر
 const GLOBE_ANSWER = `افغانستان در **قلب آسیا** قرار دارد و به بحر راه ندارد (کشور محاط به خشکه است). بیایید آن را روی کره زمین ببینیم: 🌍
 
 \`\`\`globe
-{"title": "افغانستان و همسایه‌هایش", "focus": {"lat": 34, "lon": 66}, "zoom": 3, "highlight": ["Afghanistan", "Iran", "Pakistan", "Tajikistan", "Uzbekistan", "Turkmenistan", "China"], "markers": [{"lat": 34.53, "lon": 69.17, "label": "کابل"}, {"lat": 36.7, "lon": 67.1, "label": "مزار شریف"}, {"lat": 34.35, "lon": 62.2, "label": "هرات"}], "routes": [{"points": [[34.35, 62.2], [36.7, 67.1], [39.65, 66.96]], "label": "راه ابریشم"}], "note": "افغانستان با **شش کشور** همسایه است. کره را بچرخانید و ببینید کدام کشورها به بحر راه دارند."}
+{"title": "افغانستان و همسایه‌هایش", "focus": {"lat": 34, "lon": 66}, "zoom": 3, "highlight": ["Afghanistan", "Iran", "Pakistan", "Tajikistan", "Uzbekistan", "Turkmenistan", "China"], "markers": [{"lat": 34.53, "lon": 69.17, "label": "کابل"}, {"lat": 36.7, "lon": 67.1, "label": "مزار شریف"}, {"lat": 34.35, "lon": 62.2, "label": "هرات"}], "routes": [{"points": [[34.35, 62.2], [36.7, 67.1], [39.65, 66.96]], "label": "راه ابریشم"}], "note": "افغانستان با **شش کشور** همسایه است."}
 \`\`\`
 
 ### همسایه‌های افغانستان
@@ -158,7 +158,7 @@ const MOLECULE_ANSWER = `مولکول آب از **یک اتوم اکسیجن** �
 const PROJECTILE_ANSWER = `وقتی توپی را به شکل مایل پرتاب می‌کنیم، مسیر آن یک **منحنی (پارابولا)** است. سرعت افقی ثابت می‌ماند، ولی جاذبه سرعت عمودی را تغییر می‌دهد. 🏐
 
 \`\`\`sim
-{"type": "projectile", "title": "پرتاب توپ با زاویه", "params": {"v0": 20, "angle": 45, "h0": 0}, "note": "زاویه را **۳۰** و **۶۰** درجه بگذارید و برد را مقایسه کنید. کدام زاویه بیشترین برد را می‌دهد؟"}
+{"type": "projectile", "title": "پرتاب توپ با زاویه", "params": {"v0": 20, "angle": 45, "h0": 0}, "note": "زاویه را **۳۰** و **۶۰** درجه بگذارید و برد را مقایسه کنید."}
 \`\`\`
 
 برد توپ از این فورمول به دست می‌آید:
@@ -172,7 +172,7 @@ $$R = \\frac{v_0^2 \\sin 2\\theta}{g}$$
 const STATES_ANSWER = `ماده سه حالت اصلی دارد: **جامد**، **مایع** و **گاز**. فرق آن‌ها در **حرکت ذرات** است. 🧊💧💨
 
 \`\`\`sim
-{"type": "states", "title": "حالت‌های آب", "substance": {"name": "آب", "melt": 0, "boil": 100}, "params": {"temperature": -10}, "note": "درجه حرارت را آهسته بالا ببرید و ببینید ذرات یخ در **۰ درجه** ذوب و در **۱۰۰ درجه** بخار می‌شوند."}
+{"type": "states", "title": "حالت‌های آب", "substance": {"name": "آب", "melt": 0, "boil": 100}, "params": {"temperature": -10}, "note": "درجه حرارت را آهسته بالا ببرید."}
 \`\`\`
 
 | حالت | شکل | حرکت ذرات |
@@ -182,6 +182,61 @@ const STATES_ANSWER = `ماده سه حالت اصلی دارد: **جامد**، 
 | گاز | همه ظرف را پر می‌کند | تند و آزاد حرکت می‌کنند |
 
 **سوال تمرینی:** چرا لباس تر در آفتاب زودتر خشک می‌شود؟ 🤔`;
+
+const SIM_DEMOS: { test: RegExp; tool: string; book: string; page: number; text: string }[] = [
+  {
+    test: /رقاصک|pendulum|آونگ/i,
+    tool: "رقاصک ساده",
+    book: "فزیک صنف نهم",
+    page: 88,
+    text: `دوره رقاصک فقط به **طول ریسمان** و **جاذبه** بستگی دارد، نه به وزن آن.
+
+\`\`\`sim
+{"type": "pendulum", "title": "رقاصک ساده", "params": {"length": 1, "amplitude": 20}, "note": "طول ریسمان را دو برابر کنید و دوره را ببینید."}
+\`\`\`
+
+$$T = 2\\pi\\sqrt{\\frac{L}{g}}$$`,
+  },
+  {
+    test: /سطح مایل|اصطکاک|incline|friction/i,
+    tool: "سطح مایل",
+    book: "فزیک صنف دهم",
+    page: 47,
+    text: `بلاک وقتی می‌لغزد که قوه پایین‌رو از اصطکاک بیشتر باشد.
+
+\`\`\`sim
+{"type": "incline", "title": "بلاک روی سطح مایل", "params": {"mass": 5, "angle": 30, "mu": 0.2}, "note": "اصطکاک را زیاد کنید تا بلاک بایستد."}
+\`\`\`
+
+$$a = g(\\sin\\theta - \\mu\\cos\\theta)$$`,
+  },
+  {
+    test: /مدار|جریان برق|اوهم|ohm|circuit|مقاومت/i,
+    tool: "قانون اوهم",
+    book: "فزیک صنف یازدهم",
+    page: 23,
+    text: `هرچه **ولتاژ** بیشتر و **مقاومت** کمتر باشد، جریان بیشتر است و گروپ روشن‌تر می‌شود.
+
+\`\`\`sim
+{"type": "circuit", "title": "مدار ساده", "params": {"voltage": 9, "resistance": 10}, "note": "مقاومت را کم کنید و گروپ را ببینید."}
+\`\`\`
+
+$$I = \\frac{V}{R}$$`,
+  },
+  {
+    test: /موج|wave/i,
+    tool: "امواج",
+    book: "فزیک صنف دهم",
+    page: 112,
+    text: `در موج، **ذرات فقط بالا و پایین** می‌روند؛ این شکل موج است که پیش می‌رود.
+
+\`\`\`sim
+{"type": "wave", "title": "موج در ریسمان", "params": {"amplitude": 0.5, "frequency": 1, "wavelength": 2}, "note": "فریکونسی را زیاد کنید و طول موج را ببینید."}
+\`\`\`
+
+$$v = f\\lambda$$`,
+  },
+];
 
 /** Picks a demo answer that matches the student's question. */
 function pickAnswer(question: string): { text: string; tool: string; source: { title: string; page: number } } {
@@ -197,6 +252,8 @@ function pickAnswer(question: string): { text: string; tool: string; source: { t
   if (/مولکول|molecule|اتوم|پیوند|H2O/i.test(question)) {
     return { text: MOLECULE_ANSWER, tool: "ساختمان مولکول آب", source: { title: "کیمیا صنف نهم", page: 27 } };
   }
+  const sim = SIM_DEMOS.find((d) => d.test.test(question));
+  if (sim) return { text: sim.text, tool: sim.tool, source: { title: sim.book, page: sim.page } };
   if (/پرتاب|پرتابی|projectile|توپ/i.test(question)) {
     return { text: PROJECTILE_ANSWER, tool: "حرکت پرتابی", source: { title: "فزیک صنف دهم", page: 61 } };
   }
