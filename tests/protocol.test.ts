@@ -40,6 +40,7 @@ describe("buildChatPayload", () => {
     studentName: "مریم",
     askedName: true,
     boardSpeed: "normal",
+    quizSound: true,
   };
 
   it("keeps new attachments and replaces old ones over budget with a note", () => {

@@ -21,6 +21,7 @@ export async function sendUserMessage(
   chatId: string | null,
   text: string,
   attachments: ChatAttachment[] = [],
+  extra: Partial<Pick<ChatMessage, "quizResult">> = {},
 ): Promise<string> {
   const store = useChatStore.getState();
   const userMessage: ChatMessage = {
@@ -29,6 +30,7 @@ export async function sendUserMessage(
     text,
     attachments: attachments.length ? attachments : undefined,
     createdAt: Date.now(),
+    ...extra,
   };
   let id = chatId;
   if (!id || !store.chats[id]) {
@@ -38,6 +40,24 @@ export async function sendUserMessage(
   }
   await streamAssistant(id);
   return id;
+}
+
+/** Resolves once Dana has finished writing in this chat (or after `timeoutMs`). */
+export function whenIdle(chatId: string, timeoutMs = 60_000): Promise<void> {
+  const busy = () => {
+    const messages = useChatStore.getState().chats[chatId]?.messages ?? [];
+    return controllers.has(chatId) || messages[messages.length - 1]?.status === "streaming";
+  };
+  if (!busy()) return Promise.resolve();
+  return new Promise((resolve) => {
+    const started = Date.now();
+    const timer = setInterval(() => {
+      if (!busy() || Date.now() - started > timeoutMs) {
+        clearInterval(timer);
+        resolve();
+      }
+    }, 250);
+  });
 }
 
 /** Re-runs the answer to the last user message. */

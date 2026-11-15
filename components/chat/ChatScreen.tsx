@@ -2,7 +2,7 @@
 
 import { AnimatePresence, motion } from "motion/react";
 import { ArrowDown, Atom, BookOpenText, Calculator, FlaskConical, Globe2, Languages } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useChatStore } from "@/lib/chat/store";
 import { useMounted } from "@/lib/hooks/useMounted";
 import { useStickToBottom } from "@/lib/hooks/useStickToBottom";
@@ -39,6 +39,13 @@ export function ChatScreen() {
     ready && !empty,
     activeChatId,
   );
+
+  // A finished exam sends its result: bring the newest messages into view.
+  useEffect(() => {
+    const onScroll = () => setTimeout(() => scrollToBottom(), 50);
+    window.addEventListener("dana:scroll-bottom", onScroll);
+    return () => window.removeEventListener("dana:scroll-bottom", onScroll);
+  }, [scrollToBottom]);
 
   return (
     <div className="relative flex min-h-0 flex-1 flex-col">

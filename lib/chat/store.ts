@@ -88,6 +88,7 @@ const DEFAULT_SETTINGS: Settings = {
   studentName: "",
   askedName: false,
   boardSpeed: "normal",
+  quizSound: true,
 };
 
 function touch(chat: Chat, messages: ChatMessage[]): Chat {

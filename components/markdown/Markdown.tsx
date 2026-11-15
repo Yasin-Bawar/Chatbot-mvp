@@ -14,7 +14,7 @@ import { cn } from "@/lib/utils";
 import { Board } from "@/components/board/Board";
 import { CodeBlock } from "./CodeBlock";
 import { hastText } from "./hast";
-import { QuizCard } from "./QuizCard";
+import { QuizCard } from "@/components/quiz/QuizCard";
 
 const remarkPlugins = [remarkGfm, remarkMath];
 const rehypePlugins: Options["rehypePlugins"] = [rehypeKatex, [rehypeHighlight, { detect: false }]];

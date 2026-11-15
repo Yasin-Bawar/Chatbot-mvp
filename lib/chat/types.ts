@@ -1,4 +1,5 @@
 import type { BoardSpeed } from "@/lib/board/timing";
+import type { QuizResult } from "@/lib/quiz/types";
 import type { ChatAttachment, SourceRef } from "@/lib/stream-protocol";
 
 export interface ToolStatus {
@@ -22,6 +23,8 @@ export interface ChatMessage {
   status?: MessageStatus;
   error?: string;
   feedback?: "up" | "down" | null;
+  /** Set on the student's message that reports an exam result (shown as a result card). */
+  quizResult?: QuizResult;
 }
 
 export interface Chat {
@@ -43,4 +46,6 @@ export interface Settings {
   askedName: boolean;
   /** Writing speed of the teacher's board. */
   boardSpeed: BoardSpeed;
+  /** Sound effects in the full-screen exam. */
+  quizSound: boolean;
 }

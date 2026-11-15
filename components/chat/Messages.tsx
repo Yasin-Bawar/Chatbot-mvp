@@ -16,8 +16,9 @@ import {
   ThumbsUp,
   TriangleAlert,
 } from "lucide-react";
-import { memo, useState } from "react";
+import { memo, useMemo, useState } from "react";
 import { attachmentSrc } from "@/lib/chat/attachments";
+import { MessageContext } from "@/lib/chat/message-context";
 import { editAndResend, regenerate } from "@/lib/chat/send";
 import { useChatStore } from "@/lib/chat/store";
 import type { ChatMessage, ToolStatus } from "@/lib/chat/types";
@@ -26,6 +27,7 @@ import { textDirection, toFaDigits } from "@/lib/persian";
 import type { SourceRef } from "@/lib/stream-protocol";
 import { cn } from "@/lib/utils";
 import { StreamingMarkdown } from "@/components/markdown/Markdown";
+import { QuizResultCard } from "@/components/quiz/QuizResultCard";
 import { Orb } from "@/components/ui/Orb";
 import { toast } from "@/components/ui/Toast";
 import type { PageTarget } from "./PageViewer";
@@ -89,7 +91,9 @@ export const UserMessage = memo(function UserMessage({
         </div>
       ) : null}
 
-      {editing ? (
+      {message.quizResult && !editing ? (
+        <QuizResultCard result={message.quizResult} />
+      ) : editing ? (
         <div className="w-full max-w-[85%] rounded-3xl border border-primary/30 bg-surface p-3 shadow-[var(--shadow-md)]">
           <textarea
             autoFocus
@@ -131,7 +135,7 @@ export const UserMessage = memo(function UserMessage({
           <button type="button" className={iconBtn} onClick={() => copy(message.text)} aria-label="کاپی">
             {copied ? <Check className="size-4 text-success" /> : <Copy className="size-4" />}
           </button>
-          {!disabled && (
+          {!disabled && !message.quizResult && (
             <button
               type="button"
               className={iconBtn}
@@ -170,6 +174,7 @@ export const AssistantMessage = memo(function AssistantMessage({
   const { copied, copy } = useCopy();
   const tools = message.tools ?? [];
   const waiting = streaming && !message.text && tools.every((t) => t.done);
+  const messageContext = useMemo(() => ({ chatId, messageId: message.id }), [chatId, message.id]);
 
   return (
     <motion.div
@@ -192,7 +197,11 @@ export const AssistantMessage = memo(function AssistantMessage({
 
         {tools.length > 0 && <ToolChips tools={tools} />}
 
-        {shown && <StreamingMarkdown text={shown} streaming={revealing} />}
+        {shown && (
+          <MessageContext.Provider value={messageContext}>
+            <StreamingMarkdown text={shown} streaming={revealing} />
+          </MessageContext.Provider>
+        )}
 
         {waiting && tools.length > 0 && (
           <div className="flex h-8 items-center">

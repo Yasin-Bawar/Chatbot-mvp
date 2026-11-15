@@ -5,11 +5,11 @@ import { Check, ChevronLeft, ChevronRight, ChevronsLeft, Gauge, Maximize2, Pause
 import { usePathname } from "next/navigation";
 import { createContext, memo, useCallback, useContext, useEffect, useId, useMemo, useRef, useState, type CSSProperties } from "react";
 import { createPortal } from "react-dom";
-import { create } from "zustand";
 import { parseBoard } from "@/lib/board/parse";
 import { NEXT_SPEED, noteDuration, SPEED_FACTOR, SPEED_LABEL, stepDuration, T, writeDuration } from "@/lib/board/timing";
 import type { BoardStep } from "@/lib/board/types";
 import { useChatStore } from "@/lib/chat/store";
+import { useOverlays } from "@/lib/overlays";
 import { toFaDigits } from "@/lib/persian";
 import { cn } from "@/lib/utils";
 import { CHALK, ChalkMath, ChalkText, ChalkWrite } from "./Chalk";
@@ -19,8 +19,6 @@ import { BoardGraph } from "./Graph";
 /** Time scale for every animation on the board (from the speed setting). */
 const TimeScale = createContext(1);
 
-/** Only one board is shown full screen at a time. */
-const useBoardOverlay = create<{ open: string | null }>(() => ({ open: null }));
 
 /* ---------------- one step on the board ---------------- */
 
@@ -132,7 +130,7 @@ export function Board({ raw, streaming }: Props) {
   const updateSettings = useChatStore((s) => s.updateSettings);
   const k = SPEED_FACTOR[speed] ?? 1;
 
-  const openId = useBoardOverlay((s) => s.open);
+  const openId = useOverlays((s) => s.board);
   const expanded = openId === id && pathname === "/";
 
   const [shown, setShown] = useState(() => (streaming ? 0 : total));
@@ -153,7 +151,7 @@ export function Board({ raw, streaming }: Props) {
   useEffect(() => {
     if (!liveAtMount || autoOpened.current) return;
     autoOpened.current = true;
-    useBoardOverlay.setState({ open: id });
+    useOverlays.setState({ board: id });
   }, [liveAtMount, id]);
 
   const reveal = useCallback((n: number) => {
@@ -230,12 +228,12 @@ export function Board({ raw, streaming }: Props) {
 
   const open = () => {
     setAnimRange(([a, b]) => (a < visible ? [visible, Infinity] : [a, b]));
-    useBoardOverlay.setState({ open: id });
+    useOverlays.setState({ board: id });
   };
   const close = useCallback(() => {
     // The board moves back into the chat: don't replay what is already written.
     setAnimRange([visible, Infinity]);
-    if (useBoardOverlay.getState().open === id) useBoardOverlay.setState({ open: null });
+    if (useOverlays.getState().board === id) useOverlays.setState({ board: null });
   }, [id, visible]);
 
   const replay = () => {

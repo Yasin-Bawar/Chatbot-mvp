@@ -28,7 +28,11 @@
   - A new board **opens full screen by itself** and is written slowly, step by step. A big control bar suits phones: play/pause, previous/next, replay, show all, and a **speed** button (آهسته / عادی / تیز, remembered on the device).
   - In the chat, the board stays as a compact card: tap it to open full screen again. Answers opened from history show complete and can be replayed.
   - Keyboard in full screen: Space play/pause, ← next, → previous, Esc close.
-- **Interactive quizzes** (آزمونک): tap an answer and see right or wrong instantly, with an explanation and a final score.
+- **Duolingo-style exams** (آزمونک): about 2 seconds after Dana writes a quiz, it opens full screen (the student can choose «بعداً» to start it later from the exam card).
+  - One question at a time, with a progress bar, a 🔥 streak, big 3D answer buttons, «بررسی» (check) and «نمی‌دانم» (I don't know), and a green/red feedback sheet with the explanation. There are small sounds (they can be muted) and confetti.
+  - The results screen shows the score, time and best streak, with «تمرین اشتباهات» (practice mistakes) and «دوباره» (retry).
+  - **«برگشت به دانا و فرستادن نتیجه»** returns to the chat and sends the result as a card; Dana then explains each mistake. Quiz mode switches off so she explains instead of quizzing again.
+  - Keyboard: 1–4 choose, Enter checks/continues, Esc exits.
 - Chips under the input box: 📎 attach a photo or PDF (photos are compressed for slow internet), 💡 تفکر عمیق (deeper thinking), 📝 آزمونک (quiz mode), 🌐 جستجوی وب (web search).
 - A model picker (دانا پیشرفته / سریع / سبک) and a book picker that limits answers to chosen books.
 - Claude-style features:

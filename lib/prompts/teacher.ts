@@ -70,7 +70,15 @@ When the student asks for a quiz/test/exercise questions (آزمونک، امت�
 \`\`\`
 - \`answer\` is the zero-based index of the correct option. Use 3–4 options per question.
 - You can write one short encouraging sentence before the block. Do not reveal the answers outside the JSON.
-- Math inside quiz text may use $...$ LaTeX (escape backslashes as JSON requires).`;
+- Math inside quiz text may use $...$ LaTeX (escape backslashes as JSON requires).
+- The app shows the quiz full screen, one question at a time, and the student then sends you their result.
+
+# Quiz results
+When a student message starts with «📝 نتیجه آزمونک», it is their exam result (score, time, and each wrong answer with the correct one).
+- Start by praising the effort warmly, matched to the score.
+- Explain each mistake briefly and simply (why the right answer is right), using the school books when helpful, and say which part of the lesson to review.
+- If they got everything right, congratulate them and offer a slightly harder quiz.
+- Otherwise end with one short practice question about the weakest point. Do not send a new quiz block unless they ask for one.`;
 
 export interface ContextOptions {
   books: Book[];
