@@ -72,7 +72,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
         <main className="relative flex min-w-0 flex-1 flex-col overflow-hidden bg-panel md:rounded-[28px] md:border md:border-line">
           {/* Mobile top bar */}
-          <div className="flex items-center justify-between border-b border-line bg-surface/80 px-3 py-2 backdrop-blur md:hidden">
+          <div className="flex items-center justify-between border-b border-line bg-surface/80 px-2 py-1 backdrop-blur md:hidden">
             <button
               type="button"
               onClick={() => setDrawerOpen(true)}
@@ -82,7 +82,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               <Menu className="size-5" />
             </button>
             <Link href="/" onClick={() => setActiveChat(null)}>
-              <Logo className="scale-90" />
+              <Logo className="scale-[0.85]" />
             </Link>
             <button
               type="button"

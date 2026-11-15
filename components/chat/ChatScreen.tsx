@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 import { useChatStore } from "@/lib/chat/store";
 import { useMounted } from "@/lib/hooks/useMounted";
 import { useStickToBottom } from "@/lib/hooks/useStickToBottom";
-import { greeting } from "@/lib/utils";
+import { cn, greeting } from "@/lib/utils";
 import { Orb } from "@/components/ui/Orb";
 import { Composer } from "./Composer";
 import { AssistantMessage, UserMessage } from "./Messages";
@@ -49,7 +49,7 @@ export function ChatScreen() {
 
   return (
     <div className="relative flex min-h-0 flex-1 flex-col">
-      <header className="no-scrollbar flex items-center gap-2 overflow-x-auto px-4 pb-2 pt-3 md:px-6 md:pt-5">
+      <header className="no-scrollbar flex items-center gap-2 overflow-x-auto px-3 pb-1.5 pt-2 md:px-6 md:pt-4">
         <ModelPicker />
         <BookScopePicker />
       </header>
@@ -60,15 +60,15 @@ export function ChatScreen() {
         </div>
       ) : empty ? (
         <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
-          <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col items-center justify-center px-4 pb-8 pt-4 md:px-6">
+          <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col items-center justify-center px-4 pb-6 pt-2 md:px-6">
             <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.6, ease: "easeOut" }}>
-              <Orb size={104} />
+              <Orb size={84} />
             </motion.div>
             <motion.h1
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1, duration: 0.5 }}
-              className="mt-7 text-center text-[26px] font-extrabold leading-[1.6] text-[#2b2d3a] sm:text-[34px]"
+              className="mt-5 text-center text-[22px] font-extrabold leading-[1.6] text-[#2b2d3a] sm:text-[30px]"
             >
               {greeting()}
               {studentName ? `، ${studentName}` : ""}
@@ -80,12 +80,12 @@ export function ChatScreen() {
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2, duration: 0.5 }}
-              className="mt-8 w-full"
+              className="mt-6 w-full"
             >
               <Composer chatId={null} streaming={false} variant="hero" seed={seed} />
             </motion.div>
 
-            <div className="mt-6 grid w-full grid-cols-2 gap-2.5 sm:grid-cols-3">
+            <div className="mt-5 grid w-full grid-cols-2 gap-2 sm:grid-cols-3">
               {SUGGESTIONS.map(({ Icon, color, title, text }, i) => (
                 <motion.button
                   key={title}
@@ -95,13 +95,16 @@ export function ChatScreen() {
                   transition={{ delay: 0.3 + i * 0.05 }}
                   whileHover={{ y: -3 }}
                   onClick={() => setSeed({ text, nonce: Date.now() })}
-                  className="flex flex-col gap-1.5 rounded-2xl border border-line bg-surface/80 p-3.5 text-start shadow-[var(--shadow-sm)] transition hover:border-primary/25 hover:shadow-[var(--shadow-md)]"
+                  className={cn(
+                    "flex flex-col gap-1 rounded-2xl border border-line bg-surface/80 p-3 text-start shadow-[var(--shadow-sm)] transition hover:border-primary/25 hover:shadow-[var(--shadow-md)]",
+                    i >= 4 && "hidden sm:flex",
+                  )}
                 >
-                  <span className="flex items-center gap-2 text-[13px] font-bold" style={{ color }}>
+                  <span className="flex items-center gap-1.5 text-[12.5px] font-bold" style={{ color }}>
                     <Icon className="size-4" />
                     {title}
                   </span>
-                  <span className="line-clamp-2 text-[13.5px] leading-6 text-ink-2">{text}</span>
+                  <span className="line-clamp-2 text-[13px] leading-6 text-ink-2">{text}</span>
                 </motion.button>
               ))}
             </div>
@@ -110,7 +113,7 @@ export function ChatScreen() {
       ) : (
         <>
           <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto">
-            <div ref={contentRef} className="mx-auto flex w-full max-w-3xl flex-col gap-7 px-4 pb-10 pt-4 md:px-6">
+            <div ref={contentRef} className="mx-auto flex w-full max-w-[50rem] flex-col gap-5 px-3.5 pb-8 pt-3 sm:gap-6 md:px-6">
               {messages.map((m, i) =>
                 m.role === "user" ? (
                   <UserMessage key={m.id} chatId={chat.id} message={m} disabled={streaming} />
@@ -135,7 +138,7 @@ export function ChatScreen() {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: 8 }}
                 onClick={() => scrollToBottom()}
-                className="absolute bottom-36 start-1/2 z-10 grid size-10 translate-x-1/2 place-items-center rounded-full border border-line bg-surface text-ink-2 shadow-[var(--shadow-lg)]"
+                className="absolute bottom-28 start-1/2 z-10 grid size-9 translate-x-1/2 place-items-center rounded-full border border-line bg-surface text-ink-2 shadow-[var(--shadow-lg)]"
                 aria-label="رفتن به پایین"
               >
                 <ArrowDown className="size-5" />
@@ -143,7 +146,7 @@ export function ChatScreen() {
             )}
           </AnimatePresence>
 
-          <div className="safe-bottom mx-auto w-full max-w-3xl px-3 pt-1 md:px-6">
+          <div className="safe-bottom mx-auto w-full max-w-[50rem] px-2.5 pt-1 md:px-6">
             <Composer chatId={activeChatId} streaming={streaming} variant="dock" />
           </div>
         </>

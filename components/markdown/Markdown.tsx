@@ -33,9 +33,9 @@ function Callout({ text, children }: { text: string; children: ReactNode }) {
   }[kind];
   const Icon = styles.Icon;
   return (
-    <div className={cn("flex gap-3 rounded-2xl border px-4 py-3", styles.box)}>
-      <span className={cn("mt-1 grid size-7 shrink-0 place-items-center rounded-xl shadow-sm", styles.icon)}>
-        <Icon className="size-4" />
+    <div className={cn("flex gap-2.5 rounded-2xl border px-3.5 py-2.5", styles.box)}>
+      <span className={cn("mt-0.5 grid size-6 shrink-0 place-items-center rounded-lg shadow-sm", styles.icon)}>
+        <Icon className="size-3.5" />
       </span>
       <div className="callout-body min-w-0 flex-1 [&>p+p]:mt-2">{children}</div>
     </div>

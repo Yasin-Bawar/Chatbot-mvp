@@ -264,15 +264,18 @@ button:disabled {
 
 /* ---------- Rich answer typography ---------- */
 .answer {
-  font-size: 15.5px;
-  line-height: 2;
+  font-size: 14.5px;
+  line-height: 1.85;
   color: var(--text);
   overflow-wrap: anywhere;
+}
+@media (min-width: 640px) {
+  .answer { font-size: 15px; }
 }
 
 .answer > * + * ,
 .answer .md-block + .md-block {
-  margin-top: 0.85em;
+  margin-top: 0.7em;
 }
 
 .answer .katex {
@@ -285,7 +288,7 @@ button:disabled {
   direction: ltr;
   overflow-x: auto;
   overflow-y: hidden;
-  padding: 10px 14px;
+  padding: 8px 12px;
   margin: 0;
   border-radius: 14px;
   background: var(--surface-2);
@@ -318,16 +321,16 @@ button:disabled {
 .answer h4 {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   font-weight: 800;
-  line-height: 1.6;
+  line-height: 1.55;
   color: var(--text);
   margin: 0;
 }
-.answer h1 { font-size: 21px; }
-.answer h2 { font-size: 19px; }
-.answer h3 { font-size: 16.5px; }
-.answer h4 { font-size: 15.5px; }
+.answer h1 { font-size: 19px; }
+.answer h2 { font-size: 17px; }
+.answer h3 { font-size: 15.5px; }
+.answer h4 { font-size: 14.5px; }
 .answer h1::before,
 .answer h2::before,
 .answer h3::before {
@@ -340,7 +343,7 @@ button:disabled {
 }
 .answer h3::before { width: 4px; height: 0.9em; opacity: 0.8; }
 .answer .md-block:not(:first-child) > h2:first-child,
-.answer .md-block:not(:first-child) > h1:first-child { margin-top: 0.6em; }
+.answer .md-block:not(:first-child) > h1:first-child { margin-top: 0.4em; }
 
 .answer strong {
   font-weight: 750;
@@ -357,22 +360,22 @@ button:disabled {
   padding: 0;
   list-style: none;
   display: grid;
-  gap: 6px;
+  gap: 4px;
 }
 .answer li > ul,
-.answer li > ol { margin-top: 6px; }
+.answer li > ol { margin-top: 4px; }
 
 .answer ul > li {
   position: relative;
-  padding-inline-start: 22px;
+  padding-inline-start: 18px;
 }
 .answer ul > li::before {
   content: "";
   position: absolute;
-  inset-inline-start: 6px;
-  top: 0.82em;
-  width: 7px;
-  height: 7px;
+  inset-inline-start: 4px;
+  top: 0.78em;
+  width: 6px;
+  height: 6px;
   border-radius: 99px;
   background: var(--grad);
 }
@@ -381,20 +384,20 @@ button:disabled {
 .answer ol > li {
   position: relative;
   counter-increment: step;
-  padding-inline-start: 38px;
-  min-height: 28px;
+  padding-inline-start: 31px;
+  min-height: 24px;
 }
 .answer ol > li::before {
   content: counter(step, persian);
   position: absolute;
   inset-inline-start: 0;
-  top: 0.28em;
-  width: 26px;
-  height: 26px;
-  border-radius: 9px;
+  top: 0.3em;
+  width: 22px;
+  height: 22px;
+  border-radius: 7px;
   display: grid;
   place-items: center;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 800;
   line-height: 1;
   color: var(--primary);
@@ -439,8 +442,8 @@ button:disabled {
 .answer table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 14.5px;
-  line-height: 1.8;
+  font-size: 13.5px;
+  line-height: 1.7;
 }
 .answer thead th {
   background: linear-gradient(180deg, #f4f3ff, #eeedff);
@@ -451,7 +454,7 @@ button:disabled {
 }
 .answer th,
 .answer td {
-  padding: 9px 14px;
+  padding: 7px 12px;
   text-align: start;
   border-bottom: 1px solid var(--border);
 }
@@ -574,7 +577,7 @@ button:disabled {
 }
 
 .board-content-inline {
-  max-height: min(52vh, 500px);
+  max-height: min(46vh, 460px);
   overflow: hidden;
 }
 
@@ -761,17 +764,17 @@ button:disabled {
 .board-ctrl-wide {
   display: inline-flex;
   white-space: nowrap;
-  height: 44px;
+  height: 40px;
   flex: 1;
   align-items: center;
   justify-content: center;
   gap: 8px;
   padding: 0 16px;
-  border-radius: 16px;
+  border-radius: 12px;
   border: 1px solid var(--border);
   background: var(--surface);
   color: var(--text-2);
-  font-size: 14.5px;
+  font-size: 14px;
   font-weight: 600;
   box-shadow: var(--shadow-sm);
   transition: all 0.15s ease;
@@ -966,7 +969,7 @@ svg .chalk-pop { transform-box: fill-box; transform-origin: center; }
 
 @media (max-width: 640px) {
   .board-content { padding: 8px 12px 14px; }
-  .board-content-inline { max-height: 340px; }
+  .board-content-inline { max-height: 300px; }
   .board-math { font-size: 18px; }
   .board-title { font-size: 17px; }
   .board-frame-expanded { padding: 6px 6px 0; border-radius: 16px; }
@@ -992,8 +995,8 @@ svg .chalk-pop { transform-box: fill-box; transform-origin: center; }
 .quiz-card-head {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 16px;
+  gap: 10px;
+  padding: 12px 14px;
   background:
     radial-gradient(60% 120% at 0% 0%, rgba(255, 255, 255, 0.18), transparent 60%),
     linear-gradient(135deg, #7c3aed, #4f46e5 55%, #22c55e 140%);
@@ -1203,6 +1206,7 @@ svg .chalk-pop { transform-box: fill-box; transform-origin: center; }
 .exam-btn:not(:disabled):hover { filter: brightness(1.05); }
 .exam-btn:not(:disabled):active { transform: translateY(2px); border-bottom-width: 2px; }
 .exam-btn:disabled { opacity: 0.45; filter: grayscale(0.6); }
+.exam-btn-sm { min-height: 44px; font-size: 15px; border-radius: 14px; }
 .exam-btn-primary { background: #4f46e5; color: #fff; border-bottom-color: #3730a3; }
 .exam-btn-green { background: #22c55e; color: #fff; border-bottom-color: #15803d; }
 .exam-btn-red { background: #ef4444; color: #fff; border-bottom-color: #b91c1c; }

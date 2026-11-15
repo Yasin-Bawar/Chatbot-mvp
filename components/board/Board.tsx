@@ -370,7 +370,7 @@ export function Board({ raw, streaming }: Props) {
                   open();
                 }}
                 disabled={total === 0 && !streaming}
-                className="bg-gradient-brand flex h-11 flex-1 items-center justify-center gap-2 whitespace-nowrap rounded-2xl px-4 text-[14.5px] font-semibold text-white shadow-[0_8px_20px_rgba(79,70,229,0.28)] transition hover:brightness-110 disabled:opacity-40 sm:flex-none"
+                className="bg-gradient-brand flex h-10 flex-1 items-center justify-center gap-2 whitespace-nowrap rounded-xl px-4 text-[14px] font-semibold text-white shadow-[0_8px_20px_rgba(79,70,229,0.28)] transition hover:brightness-110 disabled:opacity-40 sm:flex-none"
               >
                 {playing ? <Pause className="size-4 fill-current" /> : <Play className="size-4 fill-current" />}
                 {primaryLabel}

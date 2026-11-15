@@ -77,19 +77,19 @@ export const QuizCard = memo(function QuizCard({ raw, streaming }: { raw: string
   return (
     <div className="quiz-card">
       <div className="quiz-card-head">
-        <span className="grid size-12 shrink-0 place-items-center rounded-2xl bg-white/20 text-white">
-          <ListChecks className="size-6" />
+        <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-white/20 text-white">
+          <ListChecks className="size-5" />
         </span>
         <div className="min-w-0 flex-1">
           <div className="text-xs font-semibold text-white/80">آزمونک</div>
-          <div className="truncate text-[17px] font-black text-white">{title}</div>
+          <div className="truncate text-[15.5px] font-black text-white">{title}</div>
           <div className="text-[13px] text-white/85">
             {toFaDigits(count)} سوال · حدود {toFaDigits(minutes)} دقیقه
           </div>
         </div>
       </div>
 
-      <div className="grid gap-3 p-4">
+      <div className="grid gap-2.5 p-3.5">
         <AnimatePresence initial={false}>
           {counting && (
             <motion.div key="countdown" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}>
@@ -120,7 +120,7 @@ export const QuizCard = memo(function QuizCard({ raw, streaming }: { raw: string
           </div>
         )}
 
-        <button type="button" onClick={show} className="exam-btn exam-btn-primary w-full">
+        <button type="button" onClick={show} className="exam-btn exam-btn-primary exam-btn-sm w-full">
           {result ? <RotateCcw className="size-5" /> : <Play className="size-5 fill-current" />}
           {result ? "دوباره امتحان کنید" : attempt > 0 ? "شروع دوباره آزمون" : "شروع آزمون"}
         </button>

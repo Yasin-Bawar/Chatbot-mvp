@@ -101,7 +101,7 @@ export function Composer({ chatId, streaming, variant, seed }: Props) {
         onDragLeave={() => setDragging(false)}
         onDrop={onDrop}
         className={cn(
-          "relative rounded-[26px] border bg-surface/95 shadow-[var(--shadow-lg)] backdrop-blur transition",
+          "relative rounded-[22px] border bg-surface/95 shadow-[var(--shadow-lg)] backdrop-blur transition sm:rounded-[26px]",
           dragging ? "border-primary/50 ring-4 ring-primary/10" : "border-line focus-within:border-primary/30",
         )}
       >
@@ -111,15 +111,15 @@ export function Composer({ chatId, streaming, variant, seed }: Props) {
               initial={{ height: 0, opacity: 0 }}
               animate={{ height: "auto", opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
-              className="flex flex-wrap gap-2 overflow-hidden px-4 pt-4"
+              className="flex flex-wrap gap-2 overflow-hidden px-3.5 pt-3"
             >
               {attachments.map((a, i) => (
                 <div key={i} className="group relative">
                   {a.kind === "image" ? (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={attachmentSrc(a)} alt={a.name} className="size-16 rounded-2xl border border-line object-cover" />
+                    <img src={attachmentSrc(a)} alt={a.name} className="size-14 rounded-2xl border border-line object-cover" />
                   ) : (
-                    <div className="flex h-16 w-40 items-center gap-2 rounded-2xl border border-line bg-surface-2 px-3 text-xs">
+                    <div className="flex h-14 w-40 items-center gap-2 rounded-2xl border border-line bg-surface-2 px-3 text-xs">
                       <FileText className="size-6 shrink-0 text-danger" />
                       <span className="line-clamp-2">{a.name}</span>
                     </div>
@@ -135,14 +135,14 @@ export function Composer({ chatId, streaming, variant, seed }: Props) {
                 </div>
               ))}
               {Array.from({ length: busyFiles }).map((_, i) => (
-                <div key={`busy-${i}`} className="size-16 animate-pulse rounded-2xl bg-surface-2" />
+                <div key={`busy-${i}`} className="size-14 animate-pulse rounded-2xl bg-surface-2" />
               ))}
             </motion.div>
           )}
         </AnimatePresence>
 
-        <div className={cn("flex items-start gap-3 px-5", variant === "hero" ? "pt-5" : "pt-4")}>
-          <Sparkles className="mt-1.5 size-5 shrink-0 text-primary-2" />
+        <div className={cn("flex items-start gap-2.5", variant === "hero" ? "px-4 pt-4 sm:px-5 sm:pt-5" : "px-4 pt-3")}>
+          <Sparkles className="mt-1 size-[18px] shrink-0 text-primary-2" />
           <textarea
             ref={textareaRef}
             value={text}
@@ -155,16 +155,22 @@ export function Composer({ chatId, streaming, variant, seed }: Props) {
               }
             }}
             rows={1}
-            placeholder={settings.quiz ? "موضوع آزمونک را بنویسید… مثلاً: فتوسنتز" : "سوال خود را بپرسید یا درسی را که نفهمیدید بنویسید…"}
+            placeholder={
+              settings.quiz
+                ? "موضوع آزمونک را بنویسید…"
+                : variant === "hero"
+                  ? "سوال خود را بپرسید یا درسی را که نفهمیدید بنویسید…"
+                  : "سوال خود را بپرسید…"
+            }
             className={cn(
-              "max-h-[220px] min-w-0 flex-1 resize-none bg-transparent text-[16px] leading-8 outline-none placeholder:text-muted",
-              variant === "hero" ? "min-h-[88px]" : "min-h-[36px]",
+              "max-h-[200px] min-w-0 flex-1 resize-none bg-transparent text-[16px] leading-7 outline-none placeholder:text-muted",
+              variant === "hero" ? "min-h-[56px] sm:min-h-[72px]" : "min-h-[28px]",
             )}
           />
         </div>
 
-        <div className="flex items-center gap-2 px-3 pb-3 pt-2">
-          <div className="no-scrollbar flex min-w-0 flex-1 items-center gap-2 overflow-x-auto">
+        <div className="flex items-center gap-1.5 px-2.5 pb-2.5 pt-1.5">
+          <div className="no-scrollbar flex min-w-0 flex-1 items-center gap-1.5 overflow-x-auto">
             <input
               ref={fileRef}
               type="file"
@@ -179,7 +185,7 @@ export function Composer({ chatId, streaming, variant, seed }: Props) {
             <button
               type="button"
               onClick={() => fileRef.current?.click()}
-              className="grid size-9 shrink-0 place-items-center rounded-xl border border-line bg-surface text-ink-2 shadow-[var(--shadow-sm)] transition hover:border-primary/30 hover:text-primary"
+              className="grid size-8 shrink-0 place-items-center rounded-[10px] border border-line bg-surface text-ink-2 shadow-[var(--shadow-sm)] transition hover:border-primary/30 hover:text-primary"
               aria-label="ضمیمه کردن عکس یا PDF"
               title="ضمیمه کردن عکس یا PDF"
             >
@@ -194,7 +200,7 @@ export function Composer({ chatId, streaming, variant, seed }: Props) {
                 title={title}
                 aria-pressed={on}
                 className={cn(
-                  "flex h-9 shrink-0 items-center gap-1.5 rounded-xl border px-3 text-[13.5px] shadow-[var(--shadow-sm)] transition",
+                  "flex h-8 shrink-0 items-center gap-1.5 rounded-[10px] border px-2.5 text-[13px] shadow-[var(--shadow-sm)] transition",
                   on
                     ? "border-primary/30 bg-primary-soft font-semibold text-primary"
                     : "border-line bg-surface text-ink-2 hover:border-primary/30 hover:text-ink",
@@ -215,7 +221,7 @@ export function Composer({ chatId, streaming, variant, seed }: Props) {
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.6, opacity: 0 }}
                 onClick={() => chatId && stopStreaming(chatId)}
-                className="grid size-10 shrink-0 place-items-center rounded-2xl bg-ink text-white shadow-md transition hover:opacity-90"
+                className="grid size-9 shrink-0 place-items-center rounded-[14px] bg-ink text-white shadow-md transition hover:opacity-90"
                 aria-label="توقف"
               >
                 <Square className="size-3.5 fill-current" />
@@ -231,7 +237,7 @@ export function Composer({ chatId, streaming, variant, seed }: Props) {
                 onClick={submit}
                 disabled={!canSend}
                 className={cn(
-                  "grid size-10 shrink-0 place-items-center rounded-2xl text-white transition",
+                  "grid size-9 shrink-0 place-items-center rounded-[14px] text-white transition",
                   canSend ? "bg-gradient-brand shadow-[0_8px_20px_rgba(79,70,229,0.35)] hover:brightness-110" : "bg-[#d9dbe3]",
                 )}
                 aria-label="فرستادن"
@@ -243,7 +249,7 @@ export function Composer({ chatId, streaming, variant, seed }: Props) {
         </div>
       </div>
       {variant === "dock" && (
-        <p className="mt-2 hidden text-center text-[11.5px] text-muted sm:block">
+        <p className="mt-1.5 hidden text-center text-[11px] text-muted sm:block">
           دانا هم ممکن است اشتباه کند. جواب‌های مهم را با کتاب و معلم خود چک کنید.
         </p>
       )}

@@ -27,7 +27,7 @@ export function CodeBlock({ language, code, children }: { language: string; code
           {copied ? "کاپی شد" : "کاپی"}
         </button>
       </div>
-      <pre dir="ltr" className="overflow-x-auto p-4 text-[13px] leading-6 text-indigo-50">
+      <pre dir="ltr" className="overflow-x-auto p-3.5 text-[12.5px] leading-6 text-indigo-50">
         <code className="font-mono">{children}</code>
       </pre>
     </div>

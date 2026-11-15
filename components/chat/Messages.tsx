@@ -69,7 +69,7 @@ export const UserMessage = memo(function UserMessage({
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3, ease: "easeOut" }}
-      className="group flex flex-col items-start gap-1.5"
+      className="group flex flex-col items-start gap-1"
     >
       {message.attachments?.length ? (
         <div className="flex flex-wrap gap-2">
@@ -100,7 +100,7 @@ export const UserMessage = memo(function UserMessage({
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
             rows={3}
-            className="w-full resize-none bg-transparent px-2 text-[15.5px] leading-8 outline-none"
+            className="w-full resize-none bg-transparent px-2 text-[15px] leading-7 outline-none"
           />
           <div className="flex justify-end gap-2">
             <button type="button" onClick={() => setEditing(false)} className="rounded-xl px-3 py-1.5 text-sm text-ink-2 hover:bg-surface-2">
@@ -123,7 +123,7 @@ export const UserMessage = memo(function UserMessage({
         message.text && (
           <div
             dir={textDirection(message.text)}
-            className="max-w-[85%] whitespace-pre-wrap rounded-3xl rounded-ss-lg bg-[#ecebff] px-4 py-2.5 text-start text-[15.5px] leading-8 text-[#1e1b4b]"
+            className="max-w-[85%] whitespace-pre-wrap rounded-[20px] rounded-ss-md bg-[#ecebff] px-3.5 py-2 text-start text-[14.5px] leading-7 text-[#1e1b4b] sm:text-[15px]"
           >
             {message.text}
           </div>
@@ -181,17 +181,17 @@ export const AssistantMessage = memo(function AssistantMessage({
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.35, ease: "easeOut" }}
-      className="flex gap-3"
+      className="flex gap-2.5"
     >
       <div className="pt-1">
-        <Orb size={30} busy={streaming} />
+        <Orb size={26} busy={streaming} />
       </div>
-      <div className="min-w-0 flex-1 space-y-3">
+      <div className="min-w-0 flex-1 space-y-2.5">
         {message.thinking?.trim() ? (
           <ThinkingPanel text={message.thinking} active={streaming && !message.text} />
         ) : waiting && tools.length === 0 ? (
-          <div className="flex h-8 items-center">
-            <span className="shimmer text-[15px] font-medium">در حال فکر کردن…</span>
+          <div className="flex h-7 items-center">
+            <span className="shimmer text-[14px] font-medium">در حال فکر کردن…</span>
           </div>
         ) : null}
 
@@ -204,8 +204,8 @@ export const AssistantMessage = memo(function AssistantMessage({
         )}
 
         {waiting && tools.length > 0 && (
-          <div className="flex h-8 items-center">
-            <span className="shimmer text-[15px] font-medium">در حال آماده کردن جواب…</span>
+          <div className="flex h-7 items-center">
+            <span className="shimmer text-[14px] font-medium">در حال آماده کردن جواب…</span>
           </div>
         )}
 
@@ -276,7 +276,7 @@ function ThinkingPanel({ text, active }: { text: string; active: boolean }) {
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="flex w-full items-center gap-2 px-3.5 py-2.5 text-start text-sm"
+        className="flex w-full items-center gap-2 px-3 py-2 text-start text-[13px]"
         aria-expanded={open}
       >
         <Brain className={cn("size-4", active ? "text-primary" : "text-muted")} />
@@ -316,7 +316,7 @@ function ToolChips({ tools }: { tools: ToolStatus[] }) {
               initial={{ opacity: 0, scale: 0.9, y: 4 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               className={cn(
-                "flex items-center gap-2 rounded-full border px-3 py-1.5 text-[13px] transition",
+                "flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[12.5px] transition",
                 tool.done ? "border-line bg-surface text-ink-2" : "border-primary/20 bg-primary-soft",
               )}
             >

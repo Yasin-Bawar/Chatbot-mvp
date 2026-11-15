@@ -15,7 +15,7 @@ import { cn } from "@/lib/utils";
 import { Orb } from "@/components/ui/Orb";
 
 const pill =
-  "flex h-10 items-center gap-2 rounded-2xl border border-line bg-surface px-3 text-[14.5px] font-semibold text-ink shadow-[var(--shadow-sm)] transition hover:border-primary/30 data-[state=open]:border-primary/40";
+  "flex h-9 shrink-0 items-center gap-1.5 rounded-xl border border-line bg-surface px-2.5 text-[13.5px] font-semibold text-ink shadow-[var(--shadow-sm)] transition hover:border-primary/30 data-[state=open]:border-primary/40";
 
 export function ModelPicker() {
   const mounted = useMounted();
@@ -26,7 +26,7 @@ export function ModelPicker() {
   return (
     <DropdownMenu.Root>
       <DropdownMenu.Trigger className={pill}>
-        <Orb size={22} />
+        <Orb size={18} />
         <span>{current.label}</span>
         <ChevronDown className="size-4 text-muted" />
       </DropdownMenu.Trigger>
@@ -77,7 +77,7 @@ export function BookScopePicker() {
 
   return (
     <Popover.Root onOpenChange={(open) => open && void refresh()}>
-      <Popover.Trigger className={cn(pill, "max-w-[220px]")}>
+      <Popover.Trigger className={cn(pill, "max-w-[200px]")}>
         <BookOpen className="size-4 shrink-0 text-primary" />
         <span className="truncate">{label}</span>
         <ChevronDown className="size-4 shrink-0 text-muted" />
