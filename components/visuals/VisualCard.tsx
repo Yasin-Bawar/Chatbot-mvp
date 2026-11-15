@@ -36,7 +36,12 @@ function describe(spec: VisualSpec): { kind: string; icon: React.ReactNode; tone
     };
   }
   return spec.type === "states"
-    ? { kind: "آزمایش کیمیا · حالت‌های ماده", icon: <FlaskConical className="size-6" />, tone: "visual-tone-states", note: spec.note }
+    ? {
+        kind: "آزمایش کیمیا · حالت‌های ماده",
+        icon: <FlaskConical className="size-6" />,
+        tone: "visual-tone-states",
+        note: spec.note,
+      }
     : { kind: "آزمایش فزیک", icon: <Orbit className="size-6" />, tone: "visual-tone-sim", note: spec.note };
 }
 
@@ -153,7 +158,13 @@ export function VisualCard({ lang, raw, streaming }: { lang: VisualKind; raw: st
                   animate={{ scale: 1, y: 0 }}
                   transition={{ type: "spring", stiffness: 260, damping: 28 }}
                 >
-                  {spec.kind === "globe" ? <Globe spec={spec} /> : spec.kind === "molecule" ? <Molecule spec={spec} /> : <Sim spec={spec} />}
+                  {spec.kind === "globe" ? (
+                    <Globe spec={spec} />
+                  ) : spec.kind === "molecule" ? (
+                    <Molecule spec={spec} />
+                  ) : (
+                    <Sim spec={spec} />
+                  )}
                 </motion.div>
                 {info.note && <Note text={info.note} />}
               </motion.div>

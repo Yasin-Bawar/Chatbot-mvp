@@ -103,7 +103,11 @@ export const UserMessage = memo(function UserMessage({
             className="w-full resize-none bg-transparent px-2 text-[15px] leading-7 outline-none"
           />
           <div className="flex justify-end gap-2">
-            <button type="button" onClick={() => setEditing(false)} className="rounded-xl px-3 py-1.5 text-sm text-ink-2 hover:bg-surface-2">
+            <button
+              type="button"
+              onClick={() => setEditing(false)}
+              className="rounded-xl px-3 py-1.5 text-sm text-ink-2 hover:bg-surface-2"
+            >
               لغو
             </button>
             <button
@@ -174,6 +178,13 @@ export const AssistantMessage = memo(function AssistantMessage({
   const { copied, copy } = useCopy();
   const tools = message.tools ?? [];
   const waiting = streaming && !message.text && tools.every((t) => t.done);
+  const status = waiting
+    ? tools.length > 0
+      ? "در حال آماده کردن جواب…"
+      : "در حال فکر کردن…"
+    : streaming && message.text
+      ? "در حال نوشتن…"
+      : null;
   const messageContext = useMemo(() => ({ chatId, messageId: message.id }), [chatId, message.id]);
 
   return (
@@ -181,19 +192,16 @@ export const AssistantMessage = memo(function AssistantMessage({
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.35, ease: "easeOut" }}
-      className="flex gap-2.5"
+      className="min-w-0 space-y-2"
     >
-      <div className="pt-1">
-        <Orb size={26} busy={streaming} />
+      {/* Name row on top, so the answer itself can use the full width. */}
+      <div className="flex h-7 items-center gap-2">
+        <Orb size={22} busy={streaming} />
+        <span className="text-[13.5px] font-bold text-ink">دانا</span>
+        {status && <span className="shimmer text-[12.5px] font-medium">{status}</span>}
       </div>
-      <div className="min-w-0 flex-1 space-y-2.5">
-        {message.thinking?.trim() ? (
-          <ThinkingPanel text={message.thinking} active={streaming && !message.text} />
-        ) : waiting && tools.length === 0 ? (
-          <div className="flex h-7 items-center">
-            <span className="shimmer text-[14px] font-medium">در حال فکر کردن…</span>
-          </div>
-        ) : null}
+      <div className="min-w-0 space-y-2.5">
+        {message.thinking?.trim() && <ThinkingPanel text={message.thinking} active={streaming && !message.text} />}
 
         {tools.length > 0 && <ToolChips tools={tools} />}
 
@@ -201,12 +209,6 @@ export const AssistantMessage = memo(function AssistantMessage({
           <MessageContext.Provider value={messageContext}>
             <StreamingMarkdown text={shown} streaming={revealing} />
           </MessageContext.Provider>
-        )}
-
-        {waiting && tools.length > 0 && (
-          <div className="flex h-7 items-center">
-            <span className="shimmer text-[14px] font-medium">در حال آماده کردن جواب…</span>
-          </div>
         )}
 
         {message.sources && message.sources.length > 0 && !revealing && (
@@ -229,9 +231,7 @@ export const AssistantMessage = memo(function AssistantMessage({
           </div>
         )}
 
-        {message.status === "stopped" && (
-          <div className="text-xs text-muted">⏸ جواب متوقف شد.</div>
-        )}
+        {message.status === "stopped" && <div className="text-xs text-muted">⏸ جواب متوقف شد.</div>}
 
         {!revealing && message.status !== "error" && message.text && (
           <div className="flex items-center gap-0.5">
@@ -239,7 +239,13 @@ export const AssistantMessage = memo(function AssistantMessage({
               {copied ? <Check className="size-4 text-success" /> : <Copy className="size-4" />}
             </button>
             {isLast && (
-              <button type="button" className={iconBtn} onClick={() => void regenerate(chatId)} aria-label="جواب دوباره" title="جواب دوباره">
+              <button
+                type="button"
+                className={iconBtn}
+                onClick={() => void regenerate(chatId)}
+                aria-label="جواب دوباره"
+                title="جواب دوباره"
+              >
                 <RotateCcw className="size-4" />
               </button>
             )}
@@ -293,7 +299,10 @@ function ThinkingPanel({ text, active }: { text: string; active: boolean }) {
             exit={{ height: 0, opacity: 0 }}
             className="overflow-hidden"
           >
-            <div dir="auto" className="max-h-64 overflow-y-auto whitespace-pre-wrap border-t border-line px-4 py-3 text-[13px] leading-6 text-muted">
+            <div
+              dir="auto"
+              className="max-h-64 overflow-y-auto whitespace-pre-wrap border-t border-line px-4 py-3 text-[13px] leading-6 text-muted"
+            >
               {text.trim()}
             </div>
           </motion.div>

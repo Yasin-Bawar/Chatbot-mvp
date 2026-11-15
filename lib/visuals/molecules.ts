@@ -534,7 +534,7 @@ export function buildMolecule(spec: {
   atoms?: MoleculeAtom[];
   bonds?: Bond[];
 }): BuiltMolecule | null {
-  const preset = findPreset(spec.preset) ?? (spec.atoms?.length ? null : findPreset(spec.title) ?? findPreset(spec.formula));
+  const preset = findPreset(spec.preset) ?? (spec.atoms?.length ? null : (findPreset(spec.title) ?? findPreset(spec.formula)));
   const atoms = preset?.atoms ?? spec.atoms ?? [];
   const bonds = (preset?.bonds ?? spec.bonds ?? []).filter(
     ([i, j]) => Number.isInteger(i) && Number.isInteger(j) && i >= 0 && j >= 0 && i < atoms.length && j < atoms.length && i !== j,

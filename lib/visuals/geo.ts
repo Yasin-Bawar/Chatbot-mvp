@@ -105,7 +105,7 @@ const ALIASES: Record<string, string> = {
   "falkland islands": "Falkland Is.",
   "east timor": "Timor-Leste",
   turkiye: "Turkey",
-  "türkiye": "Turkey",
+  türkiye: "Turkey",
   uae: "United Arab Emirates",
   ksa: "Saudi Arabia",
   "korea, south": "South Korea",

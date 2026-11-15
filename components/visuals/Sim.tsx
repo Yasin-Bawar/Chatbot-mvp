@@ -46,7 +46,9 @@ function paramDefs(spec: SimSpec): ParamDef[] {
   const defs = SIM_PARAMS[spec.type];
   if (spec.type !== "states" || !spec.substance) return defs;
   const range = temperatureRange(spec.substance.melt, spec.substance.boil);
-  return defs.map((d) => (d.key === "temperature" ? { ...d, ...range, value: Math.round((spec.substance!.melt + spec.substance!.boil) / 2) } : d));
+  return defs.map((d) =>
+    d.key === "temperature" ? { ...d, ...range, value: Math.round((spec.substance!.melt + spec.substance!.boil) / 2) } : d,
+  );
 }
 
 function Slider({ def, value, onChange }: { def: ParamDef; value: number; onChange: (v: number) => void }) {
@@ -83,7 +85,8 @@ export default function Sim({ spec }: { spec: SimSpec }) {
     const base = initialParams(spec.type, spec.params);
     if (spec.type === "states") {
       const t = defs.find((d) => d.key === "temperature")!;
-      base.temperature = typeof spec.params.temperature === "number" ? Math.min(t.max, Math.max(t.min, spec.params.temperature)) : t.value;
+      base.temperature =
+        typeof spec.params.temperature === "number" ? Math.min(t.max, Math.max(t.min, spec.params.temperature)) : t.value;
     }
     return base;
   });

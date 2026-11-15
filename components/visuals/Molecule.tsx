@@ -12,7 +12,15 @@ import { VisualError } from "./VisualError";
 const UP = new THREE.Vector3(0, 1, 0);
 
 /** A cylinder from a to b (two halves, each in its atom's colour). */
-function addBond(group: THREE.Group, a: THREE.Vector3, b: THREE.Vector3, colorA: string, colorB: string, radius: number, opacity = 1) {
+function addBond(
+  group: THREE.Group,
+  a: THREE.Vector3,
+  b: THREE.Vector3,
+  colorA: string,
+  colorB: string,
+  radius: number,
+  opacity = 1,
+) {
   const mid = a.clone().add(b).multiplyScalar(0.5);
   for (const [from, to, color] of [
     [a, mid, colorA],
@@ -170,7 +178,13 @@ export default function Molecule({ spec }: { spec: MoleculeSpec }) {
           {spinning ? <Pause className="size-4" /> : <Play className="size-4" />} {spinning ? "توقف چرخش" : "چرخش"}
         </button>
         {!molecule.crystal && (
-          <button type="button" onClick={() => setLabels((l) => !l)} className="visual-tool" data-active={labels ? "true" : undefined} aria-pressed={labels}>
+          <button
+            type="button"
+            onClick={() => setLabels((l) => !l)}
+            className="visual-tool"
+            data-active={labels ? "true" : undefined}
+            aria-pressed={labels}
+          >
             <Tags className="size-4" /> نام اتوم‌ها
           </button>
         )}

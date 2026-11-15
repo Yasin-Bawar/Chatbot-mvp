@@ -7,6 +7,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
 import { useChatStore } from "@/lib/chat/store";
+import { useUi } from "@/lib/ui-store";
 import { Logo } from "@/components/ui/Logo";
 import { Toaster } from "@/components/ui/Toast";
 import { NameDialog } from "./NameDialog";
@@ -17,6 +18,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const setActiveChat = useChatStore((s) => s.setActiveChat);
+  const chromeHidden = useUi((s) => s.chromeHidden) && pathname === "/";
 
   // Close the mobile drawer on navigation.
   const [lastPath, setLastPath] = useState(pathname);
@@ -71,30 +73,36 @@ export function AppShell({ children }: { children: ReactNode }) {
         </AnimatePresence>
 
         <main className="relative flex min-w-0 flex-1 flex-col overflow-hidden bg-panel md:rounded-[28px] md:border md:border-line">
-          {/* Mobile top bar */}
-          <div className="flex items-center justify-between border-b border-line bg-surface/80 px-2 py-1 backdrop-blur md:hidden">
-            <button
-              type="button"
-              onClick={() => setDrawerOpen(true)}
-              className="grid size-10 place-items-center rounded-xl text-ink-2 hover:bg-surface-2"
-              aria-label="منو"
-            >
-              <Menu className="size-5" />
-            </button>
-            <Link href="/" onClick={() => setActiveChat(null)}>
-              <Logo className="scale-[0.85]" />
-            </Link>
-            <button
-              type="button"
-              onClick={() => {
-                setActiveChat(null);
-                router.push("/");
-              }}
-              className="grid size-10 place-items-center rounded-xl text-ink-2 hover:bg-surface-2"
-              aria-label="گفتگوی تازه"
-            >
-              <SquarePen className="size-5" />
-            </button>
+          {/* Mobile top bar (slides away while reading an answer) */}
+          <div className="md:hidden">
+            <div className="chrome-collapse" data-hidden={chromeHidden ? "true" : undefined}>
+              <div>
+                <div className="flex items-center justify-between border-b border-line bg-surface/80 px-2 py-1 backdrop-blur">
+                  <button
+                    type="button"
+                    onClick={() => setDrawerOpen(true)}
+                    className="grid size-10 place-items-center rounded-xl text-ink-2 hover:bg-surface-2"
+                    aria-label="منو"
+                  >
+                    <Menu className="size-5" />
+                  </button>
+                  <Link href="/" onClick={() => setActiveChat(null)}>
+                    <Logo className="scale-[0.85]" />
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActiveChat(null);
+                      router.push("/");
+                    }}
+                    className="grid size-10 place-items-center rounded-xl text-ink-2 hover:bg-surface-2"
+                    aria-label="گفتگوی تازه"
+                  >
+                    <SquarePen className="size-5" />
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
           {children}
         </main>

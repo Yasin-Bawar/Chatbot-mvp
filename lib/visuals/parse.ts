@@ -38,7 +38,13 @@ function latLon(v: unknown): { lat: number; lon: number } | null {
 
 function parseGlobe(o: Raw): GlobeSpec {
   const highlight = arr(o.highlight ?? o.countries)
-    .map((h): GlobeSpec["highlight"][number] | null => (typeof h === "string" ? { name: h } : isObj(h) ? { name: str(h.name, 80) ?? "", label: str(h.label, 60), color: color(h.color) } : null))
+    .map((h): GlobeSpec["highlight"][number] | null =>
+      typeof h === "string"
+        ? { name: h }
+        : isObj(h)
+          ? { name: str(h.name, 80) ?? "", label: str(h.label, 60), color: color(h.color) }
+          : null,
+    )
     .filter((h): h is GlobeSpec["highlight"][number] => Boolean(h?.name))
     .slice(0, 30);
   const markers = arr(o.markers ?? o.places)
@@ -57,7 +63,13 @@ function parseGlobe(o: Raw): GlobeSpec {
         .map(latLon)
         .filter((p): p is { lat: number; lon: number } => Boolean(p))
         .map((p) => [p.lat, p.lon] as [number, number]);
-      return points.length >= 2 ? { points: points.slice(0, 50), label: isObj(r) ? str(r.label, 60) : undefined, color: isObj(r) ? color(r.color) : undefined } : null;
+      return points.length >= 2
+        ? {
+            points: points.slice(0, 50),
+            label: isObj(r) ? str(r.label, 60) : undefined,
+            color: isObj(r) ? color(r.color) : undefined,
+          }
+        : null;
     })
     .filter((r): r is GlobeSpec["routes"][number] => Boolean(r))
     .slice(0, 10);

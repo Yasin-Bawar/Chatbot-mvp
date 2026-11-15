@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { useChatStore } from "@/lib/chat/store";
 import { useMounted } from "@/lib/hooks/useMounted";
 import { useStickToBottom } from "@/lib/hooks/useStickToBottom";
+import { useUi } from "@/lib/ui-store";
 import { cn, greeting } from "@/lib/utils";
 import { Orb } from "@/components/ui/Orb";
 import { Composer } from "./Composer";
@@ -40,6 +41,38 @@ export function ChatScreen() {
     activeChatId,
   );
 
+  // Scrolling down to read hides the top bars; scrolling up (or reaching the top) brings them back.
+  const chromeHidden = useUi((s) => s.chromeHidden);
+  const setChromeHidden = useUi((s) => s.setChromeHidden);
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!ready || empty || !el) {
+      setChromeHidden(false);
+      return;
+    }
+    let lastY = el.scrollTop;
+    let travel = 0;
+    const onScroll = () => {
+      const y = el.scrollTop;
+      const dy = y - lastY;
+      lastY = y;
+      if (y < 48) {
+        travel = 0;
+        setChromeHidden(false);
+        return;
+      }
+      if (Math.sign(dy) !== Math.sign(travel)) travel = 0;
+      travel += dy;
+      if (travel > 36) setChromeHidden(true);
+      else if (travel < -36) setChromeHidden(false);
+    };
+    el.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      el.removeEventListener("scroll", onScroll);
+      setChromeHidden(false);
+    };
+  }, [ready, empty, activeChatId, scrollRef, setChromeHidden]);
+
   // A finished exam sends its result: bring the newest messages into view.
   useEffect(() => {
     const onScroll = () => setTimeout(() => scrollToBottom(), 50);
@@ -49,10 +82,14 @@ export function ChatScreen() {
 
   return (
     <div className="relative flex min-h-0 flex-1 flex-col">
-      <header className="no-scrollbar flex items-center gap-2 overflow-x-auto px-3 pb-1.5 pt-2 md:px-6 md:pt-4">
-        <ModelPicker />
-        <BookScopePicker />
-      </header>
+      <div className="chrome-collapse" data-hidden={chromeHidden && !empty ? "true" : undefined}>
+        <div>
+          <header className="no-scrollbar flex items-center gap-2 overflow-x-auto px-3 pb-1.5 pt-2 md:px-6 md:pt-4">
+            <ModelPicker />
+            <BookScopePicker />
+          </header>
+        </div>
+      </div>
 
       {!ready ? (
         <div className="flex flex-1 items-center justify-center">
@@ -61,7 +98,11 @@ export function ChatScreen() {
       ) : empty ? (
         <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
           <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col items-center justify-center px-4 pb-6 pt-2 md:px-6">
-            <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.6, ease: "easeOut" }}>
+            <motion.div
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.6, ease: "easeOut" }}
+            >
               <Orb size={84} />
             </motion.div>
             <motion.h1
@@ -113,7 +154,7 @@ export function ChatScreen() {
       ) : (
         <>
           <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto">
-            <div ref={contentRef} className="mx-auto flex w-full max-w-[50rem] flex-col gap-5 px-3.5 pb-8 pt-3 sm:gap-6 md:px-6">
+            <div ref={contentRef} className="mx-auto flex w-full max-w-[50rem] flex-col gap-5 px-3 pb-6 pt-3 sm:gap-6 md:px-6">
               {messages.map((m, i) =>
                 m.role === "user" ? (
                   <UserMessage key={m.id} chatId={chat.id} message={m} disabled={streaming} />

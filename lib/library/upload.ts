@@ -181,7 +181,8 @@ async function uploadOne(id: string, item: BulkItem, forceAi: boolean) {
     console.error("upload failed", err);
     // Don't leave an empty book behind.
     if (bookId) await fetch(`/api/books/${bookId}`, { method: "DELETE" }).catch(() => {});
-    const message = err instanceof Error && /[؀-ۿ]/.test(err.message) ? err.message : "بارگذاری فایل ناکام شد. دوباره امتحان کنید.";
+    const message =
+      err instanceof Error && /[؀-ۿ]/.test(err.message) ? err.message : "بارگذاری فایل ناکام شد. دوباره امتحان کنید.";
     uploads.set(id, { state: "error", message });
   } finally {
     void useBooksStore.getState().refresh();

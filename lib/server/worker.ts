@@ -256,9 +256,7 @@ export async function processBook(row: BookRow, deadline: number): Promise<BookO
 
   // ---- Finished ----
   const saved = (await getPageNumbers(id)).length;
-  const message =
-    stopMessage ??
-    (failed.size ? `${failed.size} صفحه خوانده نشد. بعداً «ادامه پردازش» را بزنید.` : null);
+  const message = stopMessage ?? (failed.size ? `${failed.size} صفحه خوانده نشد. بعداً «ادامه پردازش» را بزنید.` : null);
   await updateProgress(id, {
     phase: saved > 0 ? "done" : "error",
     status: saved > 0 ? "ready" : "error",

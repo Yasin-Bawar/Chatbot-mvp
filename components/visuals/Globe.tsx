@@ -169,7 +169,7 @@ function stars(): THREE.Points {
   const count = 1400;
   const positions = new Float32Array(count * 3);
   let seed = 11;
-  const rand = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+  const rand = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
   for (let i = 0; i < count; i++) {
     const z = rand() * 2 - 1;
     const t = rand() * Math.PI * 2;
@@ -179,7 +179,10 @@ function stars(): THREE.Points {
   }
   const geometry = new THREE.BufferGeometry();
   geometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
-  return new THREE.Points(geometry, new THREE.PointsMaterial({ color: 0xffffff, size: 0.11, transparent: true, opacity: 0.75, depthWrite: false }));
+  return new THREE.Points(
+    geometry,
+    new THREE.PointsMaterial({ color: 0xffffff, size: 0.11, transparent: true, opacity: 0.75, depthWrite: false }),
+  );
 }
 
 export default function Globe({ spec }: { spec: GlobeSpec }) {
@@ -309,7 +312,11 @@ export default function Globe({ spec }: { spec: GlobeSpec }) {
       travellers.push({ mesh: light, curve, offset: i * 0.33 });
       if (route.label) {
         const mid = curve.getPoint(0.5);
-        stage.addLabel(route.label, mid.clone().multiplyScalar(1.03), { className: "visual-label-route", surface: true, priority: 1 });
+        stage.addLabel(route.label, mid.clone().multiplyScalar(1.03), {
+          className: "visual-label-route",
+          surface: true,
+          priority: 1,
+        });
       }
     });
     stage.onFrame((_dt, time) => {

@@ -20,7 +20,13 @@ describe("molecule shapes (VSEPR layout)", () => {
 
   it("methane is tetrahedral (109.5°)", () => {
     const p = positions("methane");
-    for (const [a, b] of [[1, 2], [1, 3], [2, 4], [3, 4]]) expect(bondAngle(p, a, 0, b)).toBeCloseTo(109.5, 0);
+    for (const [a, b] of [
+      [1, 2],
+      [1, 3],
+      [2, 4],
+      [3, 4],
+    ])
+      expect(bondAngle(p, a, 0, b)).toBeCloseTo(109.5, 0);
   });
 
   it("ammonia is pyramidal (~107°), not flat", () => {
@@ -61,7 +67,10 @@ describe("molecule shapes (VSEPR layout)", () => {
         expect(order).toBeGreaterThanOrEqual(1);
       }
       const built = buildMolecule({ preset: key })!;
-      expect(built.atoms.every((a) => a.pos.every(Number.isFinite)), key).toBe(true);
+      expect(
+        built.atoms.every((a) => a.pos.every(Number.isFinite)),
+        key,
+      ).toBe(true);
     }
   });
 
@@ -76,7 +85,14 @@ describe("molecule shapes (VSEPR layout)", () => {
 
   it("lays out custom molecules and writes their formula", () => {
     const atoms = [{ el: "S" }, { el: "O" }, { el: "O" }, { el: "O" }, { el: "O" }, { el: "H" }, { el: "H" }];
-    const bonds: [number, number, number][] = [[0, 1, 2], [0, 2, 2], [0, 3, 1], [0, 4, 1], [3, 5, 1], [4, 6, 1]];
+    const bonds: [number, number, number][] = [
+      [0, 1, 2],
+      [0, 2, 2],
+      [0, 3, 1],
+      [0, 4, 1],
+      [3, 5, 1],
+      [4, 6, 1],
+    ];
     const p = layoutMolecule(atoms, bonds);
     expect(bondAngle(p, 1, 0, 2)).toBeGreaterThan(100); // tetrahedral-ish sulfur
     expect(formulaOf(atoms)).toBe("H_2O_4S");

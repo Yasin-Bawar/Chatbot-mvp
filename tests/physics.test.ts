@@ -1,5 +1,15 @@
 import { describe, expect, it } from "vitest";
-import { circuit, incline, initialParams, pendulumPeriod, pendulumStep, phaseAt, projectile, temperatureRange, wave } from "@/lib/visuals/physics";
+import {
+  circuit,
+  incline,
+  initialParams,
+  pendulumPeriod,
+  pendulumStep,
+  phaseAt,
+  projectile,
+  temperatureRange,
+  wave,
+} from "@/lib/visuals/physics";
 
 describe("physics formulas", () => {
   it("projectile from the ground", () => {

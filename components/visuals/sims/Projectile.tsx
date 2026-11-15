@@ -11,7 +11,12 @@ type Shot = ReturnType<typeof projectile>;
 export function projectileReadouts(p: Record<string, number>): Readout[] {
   const s = projectile(p.v0, p.angle, p.h0, p.g);
   return [
-    { label: "برد (فاصله افقی)", value: fmt(s.range), unit: "m", tex: p.h0 === 0 ? "R = \\dfrac{v_0^2 \\sin 2\\theta}{g}" : undefined },
+    {
+      label: "برد (فاصله افقی)",
+      value: fmt(s.range),
+      unit: "m",
+      tex: p.h0 === 0 ? "R = \\dfrac{v_0^2 \\sin 2\\theta}{g}" : undefined,
+    },
     { label: "بلندترین ارتفاع", value: fmt(s.maxHeight), unit: "m", tex: "H = h_0 + \\dfrac{v_0^2 \\sin^2\\theta}{2g}" },
     { label: "زمان پرواز", value: fmt(s.flightTime, 2), unit: "s" },
   ];

@@ -16,9 +16,7 @@ export class NoApiKeyError extends Error {
  */
 export async function readPagesWithClaude(pdfBase64: string, pageNumbers: number[]): Promise<Map<number, string>> {
   if (isMockMode()) {
-    return new Map(
-      pageNumbers.map((n) => [n, `## صفحه ${n}\n\n[متن نمونه: در حالت آزمایشی، هوش مصنوعی این صفحه را نخواند.]`]),
-    );
+    return new Map(pageNumbers.map((n) => [n, `## صفحه ${n}\n\n[متن نمونه: در حالت آزمایشی، هوش مصنوعی این صفحه را نخواند.]`]));
   }
   if (!hasApiKey()) throw new NoApiKeyError();
 

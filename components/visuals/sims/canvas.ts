@@ -82,7 +82,14 @@ export function text(
   value: string,
   x: number,
   y: number,
-  opts: { size?: number; color?: string; align?: CanvasTextAlign; weight?: number; baseline?: CanvasTextBaseline; bg?: string } = {},
+  opts: {
+    size?: number;
+    color?: string;
+    align?: CanvasTextAlign;
+    weight?: number;
+    baseline?: CanvasTextBaseline;
+    bg?: string;
+  } = {},
 ) {
   ctx.save();
   ctx.font = `${opts.weight ?? 600} ${opts.size ?? 13}px ${FONT}`;
@@ -105,15 +112,7 @@ export function text(
   ctx.restore();
 }
 
-export function arrow(
-  ctx: CanvasRenderingContext2D,
-  x1: number,
-  y1: number,
-  x2: number,
-  y2: number,
-  color: string,
-  width = 3,
-) {
+export function arrow(ctx: CanvasRenderingContext2D, x1: number, y1: number, x2: number, y2: number, color: string, width = 3) {
   const len = Math.hypot(x2 - x1, y2 - y1);
   if (len < 2) return;
   const head = Math.min(12, len * 0.4);

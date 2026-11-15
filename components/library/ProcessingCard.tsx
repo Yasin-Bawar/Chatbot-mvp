@@ -18,10 +18,20 @@ function Step({ state, label, detail }: { state: "todo" | "active" | "done"; lab
           state === "todo" && "border-line text-muted",
         )}
       >
-        {state === "done" ? <Check className="size-4" /> : state === "active" ? <LoaderCircle className="size-4 animate-spin" /> : <span className="size-1.5 rounded-full bg-current" />}
+        {state === "done" ? (
+          <Check className="size-4" />
+        ) : state === "active" ? (
+          <LoaderCircle className="size-4 animate-spin" />
+        ) : (
+          <span className="size-1.5 rounded-full bg-current" />
+        )}
       </span>
-      <span className={cn("text-sm", state === "active" ? "shimmer font-semibold" : state === "done" ? "text-ink" : "text-muted")}>{label}</span>
-      {detail && <span className="ms-auto text-xs tabular-nums text-muted">{detail}</span>}
+      <span
+        className={cn("text-sm", state === "active" ? "shimmer font-semibold" : state === "done" ? "text-ink" : "text-muted")}
+      >
+        {label}
+      </span>
+      {detail && <span className="ms-auto whitespace-nowrap text-xs tabular-nums text-muted">{detail}</span>}
     </div>
   );
 }
@@ -72,7 +82,13 @@ export function ServerBookCard({ book }: { book: Book }) {
             failed ? "bg-danger" : phase === "done" ? "bg-success" : "bg-gradient-brand",
           )}
         >
-          {failed ? <CircleX className="size-5" /> : phase === "done" ? <Check className="size-5" /> : <Sparkles className="size-5" />}
+          {failed ? (
+            <CircleX className="size-5" />
+          ) : phase === "done" ? (
+            <Check className="size-5" />
+          ) : (
+            <Sparkles className="size-5" />
+          )}
         </span>
         <div className="min-w-0 flex-1">
           <div className="truncate font-bold">{book.title}</div>
@@ -87,7 +103,12 @@ export function ServerBookCard({ book }: { book: Book }) {
           </div>
         </div>
         {finished && (
-          <button type="button" onClick={() => unfollow(book.id)} className="grid size-8 place-items-center rounded-lg text-muted hover:bg-surface-2" aria-label="بستن">
+          <button
+            type="button"
+            onClick={() => unfollow(book.id)}
+            className="grid size-8 place-items-center rounded-lg text-muted hover:bg-surface-2"
+            aria-label="بستن"
+          >
             <X className="size-4" />
           </button>
         )}
@@ -100,7 +121,9 @@ export function ServerBookCard({ book }: { book: Book }) {
         <Step
           state={phase === "extracting" ? "active" : extractDone ? "done" : "todo"}
           label="استخراج متن صفحات"
-          detail={book.pageCount ? `${toFaDigits(Math.min(book.scanned, book.pageCount))} / ${toFaDigits(book.pageCount)}` : undefined}
+          detail={
+            book.pageCount ? `${toFaDigits(Math.min(book.scanned, book.pageCount))} / ${toFaDigits(book.pageCount)}` : undefined
+          }
         />
         {(book.aiTotal > 0 || phase === "ai") && (
           <Step
@@ -119,7 +142,12 @@ export function ServerBookCard({ book }: { book: Book }) {
         </p>
       )}
       {finished && book.error && (
-        <p className={cn("mt-4 rounded-2xl px-4 py-2.5 text-sm leading-7", failed ? "bg-danger-soft text-[#9f1d22]" : "bg-[#fff7e6] text-[#92400e]")}>
+        <p
+          className={cn(
+            "mt-4 rounded-2xl px-4 py-2.5 text-sm leading-7",
+            failed ? "bg-danger-soft text-[#9f1d22]" : "bg-[#fff7e6] text-[#92400e]",
+          )}
+        >
           {book.error}
         </p>
       )}
@@ -158,7 +186,9 @@ export function UploadCard({ upload }: { upload: Upload }) {
   return (
     <motion.div {...cardMotion} className="card rounded-3xl p-5">
       <div className="mb-4 flex items-center gap-3">
-        <span className={cn("grid size-10 place-items-center rounded-2xl text-white", failed ? "bg-danger" : "bg-gradient-brand")}>
+        <span
+          className={cn("grid size-10 place-items-center rounded-2xl text-white", failed ? "bg-danger" : "bg-gradient-brand")}
+        >
           {failed ? <CircleX className="size-5" /> : <CloudUpload className="size-5" />}
         </span>
         <div className="min-w-0 flex-1">
@@ -168,14 +198,21 @@ export function UploadCard({ upload }: { upload: Upload }) {
           </div>
         </div>
         {failed && (
-          <button type="button" onClick={() => remove(upload.id)} className="grid size-8 place-items-center rounded-lg text-muted hover:bg-surface-2" aria-label="بستن">
+          <button
+            type="button"
+            onClick={() => remove(upload.id)}
+            className="grid size-8 place-items-center rounded-lg text-muted hover:bg-surface-2"
+            aria-label="بستن"
+          >
             <X className="size-4" />
           </button>
         )}
       </div>
       <Bar value={failed ? 0 : upload.progress} />
       {failed ? (
-        upload.message && <p className="mt-4 rounded-2xl bg-danger-soft px-4 py-2.5 text-sm leading-7 text-[#9f1d22]">{upload.message}</p>
+        upload.message && (
+          <p className="mt-4 rounded-2xl bg-danger-soft px-4 py-2.5 text-sm leading-7 text-[#9f1d22]">{upload.message}</p>
+        )
       ) : (
         <p className="mt-4 rounded-2xl bg-[#fff7e6] px-4 py-2.5 text-[13px] leading-6 text-[#92400e]">
           تا پایان بارگذاری این صفحه را باز نگه دارید. بعد از آن، خواندن کتاب در سرور ادامه پیدا می‌کند.
