@@ -1,9 +1,9 @@
 "use client";
 
 import { motion } from "motion/react";
-import { Check, CircleX, LoaderCircle, Sparkles, X } from "lucide-react";
+import { Check, CircleX, Clock3, LoaderCircle, Sparkles, X } from "lucide-react";
 import type { Job } from "@/lib/pdf/process-book";
-import { useJobs } from "@/lib/pdf/process-book";
+import { cancelQueued, useJobs } from "@/lib/pdf/process-book";
 import { toFaDigits } from "@/lib/persian";
 import { cn } from "@/lib/utils";
 
@@ -41,6 +41,7 @@ function Bar({ value }: { value: number }) {
 
 export function ProcessingCard({ job }: { job: Job }) {
   const remove = useJobs((s) => s.remove);
+  if (job.phase === "queued") return <QueuedCard job={job} />;
   const extractDone = job.phase === "ai" || job.phase === "done";
   const progress =
     job.phase === "reading"
@@ -105,6 +106,36 @@ export function ProcessingCard({ job }: { job: Job }) {
           {job.message}
         </p>
       )}
+    </motion.div>
+  );
+}
+
+/** A book waiting for its turn in the bulk-upload queue. */
+function QueuedCard({ job }: { job: Job }) {
+  return (
+    <motion.div
+      layout
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, scale: 0.97 }}
+      className="card flex items-center gap-3 rounded-3xl p-4 opacity-80"
+    >
+      <span className="grid size-10 shrink-0 place-items-center rounded-2xl bg-surface-2 text-muted">
+        <Clock3 className="size-5" />
+      </span>
+      <div className="min-w-0 flex-1">
+        <div className="truncate font-bold">{job.title}</div>
+        <div className="text-xs text-muted">در صف — منتظر نوبت</div>
+      </div>
+      <button
+        type="button"
+        onClick={() => cancelQueued(job.bookId)}
+        className="grid size-9 shrink-0 place-items-center rounded-xl text-muted transition hover:bg-danger-soft hover:text-danger"
+        aria-label="حذف از صف"
+        title="حذف از صف"
+      >
+        <X className="size-4" />
+      </button>
     </motion.div>
   );
 }

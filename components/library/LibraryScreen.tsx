@@ -14,10 +14,12 @@ import { BookCard } from "./BookCard";
 import { ProcessingCard } from "./ProcessingCard";
 import { UploadDialog } from "./UploadDialog";
 
+const MAX_FILES = 30;
+
 export function LibraryScreen() {
   const { books, configured, loaded, error, refresh } = useBooksStore();
   const jobs = useJobs((s) => s.jobs);
-  const [file, setFile] = useState<File | null>(null);
+  const [files, setFiles] = useState<File[]>([]);
   const [dragging, setDragging] = useState(false);
   const [query, setQuery] = useState("");
   const [subject, setSubject] = useState<string | null>(null);
@@ -38,19 +40,25 @@ export function LibraryScreen() {
     return () => window.removeEventListener("beforeunload", onBeforeUnload);
   }, []);
 
-  const pickFile = (f: File | undefined | null) => {
-    if (!f) return;
-    if (f.type !== "application/pdf" && !f.name.toLowerCase().endsWith(".pdf")) {
-      toast.error("فقط فایل PDF قبول می‌شود.");
-      return;
+  /** Accepts one or many PDFs (non-PDF files are skipped, at most MAX_FILES at once). */
+  const pickFiles = (list: FileList | File[] | null | undefined) => {
+    const all = Array.from(list ?? []);
+    if (!all.length) return;
+    const pdfs = all.filter((f) => f.type === "application/pdf" || f.name.toLowerCase().endsWith(".pdf"));
+    const skipped = all.filter((f) => !pdfs.includes(f));
+    if (skipped.length) {
+      toast.error(`فقط فایل PDF قبول می‌شود. این فایل‌ها کنار گذاشته شدند: ${skipped.map((f) => f.name).join("، ")}`);
     }
-    setFile(f);
+    if (pdfs.length > MAX_FILES) {
+      toast.info(`در هر بار حداکثر ${toFaDigits(MAX_FILES)} کتاب. ${toFaDigits(MAX_FILES)} کتاب اول انتخاب شد.`);
+    }
+    if (pdfs.length) setFiles(pdfs.slice(0, MAX_FILES));
   };
 
   const onDrop = (e: DragEvent) => {
     e.preventDefault();
     setDragging(false);
-    pickFile(e.dataTransfer.files?.[0]);
+    pickFiles(e.dataTransfer.files);
   };
 
   const filtered = useMemo(() => {
@@ -65,7 +73,9 @@ export function LibraryScreen() {
 
   const presentSubjects = SUBJECTS.filter((s) => books.some((b) => b.subject === s.id));
   const totalPages = books.reduce((n, b) => n + b.pagesDone, 0);
-  const jobList = Object.values(jobs);
+  const jobList = Object.values(jobs).sort((a, b) => a.order - b.order);
+  const doneCount = jobList.filter((j) => j.phase === "done").length;
+  const current = jobList.find((j) => j.phase !== "queued" && j.phase !== "done" && j.phase !== "error");
   const previewBook = preview ? books.find((b) => b.id === preview.bookId) : undefined;
 
   return (
@@ -130,8 +140,8 @@ export function LibraryScreen() {
                 <CloudUpload className="size-8" />
               </motion.span>
               <div className="relative">
-                <div className="text-[17px] font-bold">فایل PDF کتاب را اینجا رها کنید</div>
-                <div className="mt-1 text-sm text-muted">یا برای انتخاب فایل کلیک کنید</div>
+                <div className="text-[17px] font-bold">یک یا چند فایل PDF کتاب را اینجا رها کنید</div>
+                <div className="mt-1 text-sm text-muted">یا کلیک کنید و همه کتاب‌های یک صنف را با هم انتخاب کنید</div>
               </div>
               <div className="relative mt-1 flex flex-wrap justify-center gap-1.5">
                 {["ریاضی", "فزیک", "کیمیا", "بیولوژی", "دری", "تاریخ", "…"].map((s) => (
@@ -144,17 +154,27 @@ export function LibraryScreen() {
                 ref={fileRef}
                 type="file"
                 accept="application/pdf,.pdf"
+                multiple
                 hidden
                 onChange={(e) => {
-                  pickFile(e.target.files?.[0]);
+                  pickFiles(e.target.files);
                   e.target.value = "";
                 }}
               />
             </motion.div>
 
+            {jobList.length > 1 && (
+              <div className="mt-5 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-ink-2">
+                <span className="font-semibold">
+                  {toFaDigits(doneCount)} از {toFaDigits(jobList.length)} کتاب آماده شد
+                </span>
+                {current && <span className="text-muted">· در حال خواندن: {current.title}</span>}
+              </div>
+            )}
+
             <AnimatePresence>
               {jobList.length > 0 && (
-                <motion.div layout className="mt-5 grid gap-3 md:grid-cols-2">
+                <motion.div layout className="mt-3 grid items-start gap-3 md:grid-cols-2">
                   {jobList.map((job) => (
                     <ProcessingCard key={job.bookId} job={job} />
                   ))}
@@ -233,7 +253,7 @@ export function LibraryScreen() {
             : undefined
         }
       />
-      <UploadDialog file={file} onClose={() => setFile(null)} />
+      <UploadDialog files={files} onClose={() => setFiles([])} />
     </div>
   );
 }

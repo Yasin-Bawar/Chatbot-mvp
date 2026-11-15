@@ -6,7 +6,7 @@ import { useBooksStore, type Book } from "@/lib/library/books-store";
 import { assessPageText, cleanExtractedText } from "./quality";
 import { getPageText, loadPdf, renderPageJpeg } from "./extract";
 
-export type JobPhase = "reading" | "extracting" | "ai" | "done" | "error";
+export type JobPhase = "queued" | "reading" | "extracting" | "ai" | "done" | "error";
 
 export interface Job {
   bookId: string;
@@ -19,6 +19,8 @@ export interface Job {
   aiDone: number;
   aiFailed: number;
   message?: string;
+  /** Creation order, so cards keep their place when a temp job becomes a real book. */
+  order: number;
 }
 
 interface JobsState {
@@ -27,10 +29,16 @@ interface JobsState {
   remove: (bookId: string) => void;
 }
 
+let orderSeq = 0;
+
 export const useJobs = create<JobsState>((set) => ({
   jobs: {},
   set: (bookId, patch) =>
-    set((s) => ({ jobs: { ...s.jobs, [bookId]: { ...(s.jobs[bookId] as Job), ...patch, bookId } } })),
+    set((s) => {
+      const prev = s.jobs[bookId];
+      const order = patch.order ?? prev?.order ?? Date.now() * 1000 + orderSeq++;
+      return { jobs: { ...s.jobs, [bookId]: { ...(prev as Job), ...patch, order, bookId } } };
+    }),
   remove: (bookId) =>
     set((s) => {
       const jobs = { ...s.jobs };
@@ -81,12 +89,72 @@ function expectsArabicScript(subject: string) {
   return subject !== "english" && subject !== "computer";
 }
 
+const tempJobId = () => `tmp-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+
+export interface BulkItem {
+  file: File;
+  title: string;
+  subject: string;
+  grade: number | null;
+}
+
+const queue: { jobId: string; item: BulkItem; forceAi: boolean }[] = [];
+let queueRunning = false;
+
+/**
+ * Adds one or many books. Each gets a "queued" card right away; the books are
+ * then processed one after another (gentler on the browser and on the API).
+ */
+export function addBooks(items: BulkItem[], forceAi: boolean) {
+  for (const item of items) {
+    const jobId = tempJobId();
+    useJobs.getState().set(jobId, {
+      title: item.title,
+      phase: "queued",
+      total: 0,
+      scanned: 0,
+      textPages: 0,
+      aiTotal: 0,
+      aiDone: 0,
+      aiFailed: 0,
+    });
+    queue.push({ jobId, item, forceAi });
+  }
+  void runQueue();
+}
+
+/** Removes a book that is still waiting in the queue. */
+export function cancelQueued(jobId: string) {
+  const index = queue.findIndex((q) => q.jobId === jobId);
+  if (index >= 0) queue.splice(index, 1);
+  useJobs.getState().remove(jobId);
+}
+
+async function runQueue() {
+  if (queueRunning) return;
+  queueRunning = true;
+  try {
+    while (queue.length) {
+      const next = queue.shift()!;
+      if (!useJobs.getState().jobs[next.jobId]) continue; // cancelled while waiting
+      try {
+        await addBook(next.item.file, { ...next.item, forceAi: next.forceAi }, next.jobId);
+      } catch (err) {
+        console.error("book failed", err);
+      }
+    }
+  } finally {
+    queueRunning = false;
+  }
+}
+
 /** Adds a new book: creates it, uploads the original (if Blob is set up), extracts all pages. */
 export async function addBook(
   file: File,
   meta: { title: string; subject: string; grade: number | null; forceAi: boolean },
+  jobId?: string,
 ): Promise<void> {
-  const tempId = `tmp-${Date.now()}`;
+  const tempId = jobId ?? tempJobId();
   const jobs = useJobs.getState();
   jobs.set(tempId, { title: meta.title, phase: "reading", total: 0, scanned: 0, textPages: 0, aiTotal: 0, aiDone: 0, aiFailed: 0 });
 
@@ -105,7 +173,10 @@ export async function addBook(
     jobs.set(tempId, { phase: "error", message: err instanceof Error && /[؀-ۿ]/.test(err.message) ? err.message : "فایل PDF خوانده نشد. مطمئن شوید فایل خراب نیست." });
     return;
   }
+  // The card keeps its place: carry the order over from the temporary job.
+  const order = useJobs.getState().jobs[tempId]?.order;
   jobs.remove(tempId);
+  jobs.set(book.id, { title: book.title, phase: "reading", total: book.pageCount, scanned: 0, textPages: 0, aiTotal: 0, aiDone: 0, aiFailed: 0, order });
   useBooksStore.getState().upsertLocal(book);
 
   if (useBooksStore.getState().blob) void uploadOriginal(file, book.id);

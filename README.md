@@ -41,7 +41,8 @@
 - Chats are saved in the browser (IndexedDB), so no accounts are needed.
 
 **کتابخانه (Library)**
-- Drag and drop a PDF, then choose the subject (Afghan curriculum) and grade (صنف ۱–۱۲).
+- **Bulk upload:** drop or select one PDF or many (e.g. all grade 11 books at once, up to 30). The subject and grade are guessed from each file name (e.g. «فزیک صنف یازدهم.pdf», `riazi-11.pdf`). A «صنف همه کتاب‌ها» picker presets the grade (remembered on the device), and every row can be corrected before starting.
+- Books are processed one after another; waiting books show «در صف» and can be removed from the queue.
 - **Hybrid extraction**: the browser reads the text layer for free with pdf.js. Each page is checked for problems that are common in Farsi PDFs: scanned pages, broken font encodings, and text stored backwards (visual order). Only those pages are sent to Claude to read visually. An option can make Claude read every page.
 - Live progress, resume for half-finished books, a page-by-page text preview, "ask about this book", and delete.
 - Search runs on Postgres with Farsi-aware normalization and stemming. Claude searches the books through the tools `search_books` and `read_book_pages` and cites pages.
