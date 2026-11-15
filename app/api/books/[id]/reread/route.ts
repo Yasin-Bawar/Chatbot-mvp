@@ -41,6 +41,9 @@ export async function POST(req: Request, ctx: RouteContext<"/api/books/[id]/rere
     if (err instanceof NoApiKeyError) {
       return Response.json({ error: "no_api_key", message: err.message }, { status: 503 });
     }
+    if (err instanceof Error && err.name === "BudgetExceededError") {
+      return Response.json({ error: "budget", message: err.message }, { status: 402 });
+    }
     console.error("reread failed", err);
     return Response.json({ error: "ocr_failed", message: friendlyError(err) }, { status: 502 });
   }

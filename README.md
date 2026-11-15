@@ -48,7 +48,7 @@
   - **States of matter** (```` ```sim ```` with `"type": "states"`): particles in a jar change from a vibrating solid to a sliding liquid to a fast gas as the temperature slider passes the melting and boiling points.
 - **Room to read:** answers use the full width; the top bars slide away while scrolling down and come back when scrolling up; and the message box is a single line until it is tapped.
 - Chips under the input box (shown when it is tapped): 📎 attach a photo or PDF (photos are compressed for slow internet), 💡 تفکر عمیق (deeper thinking), 📝 آزمونک (quiz mode), 🌐 جستجوی وب (web search). Small coloured dots show which modes are on.
-- A model picker (دانا پیشرفته / سریع / سبک) and a book picker that limits answers to chosen books.
+- A model picker (دانا پیشرفته = Claude Sonnet 4.6, دانا سبک = Claude Haiku 5.5) and a book picker that limits answers to chosen books.
 - Claude-style features:
   - stop, regenerate, and edit-and-resend;
   - copy and 👍/👎 on answers;
@@ -77,7 +77,7 @@ POST /api/books/:id/start ──▶ /api/worker ─ after() ─▶ text layer (u
 chat input ──────────────────▶ POST /api/chat (NDJSON stream) ◀─────────────────────▶ teacher + book tools
 ```
 
-- `app/api/chat/route.ts` runs a streaming tool-use loop (`client.beta.messages.stream`) with adaptive thinking, prompt caching and **server-side refusal fallback** (`fallbacks: "default"`), then streams events to the browser.
+- `app/api/chat/route.ts` runs a streaming tool-use loop (`client.beta.messages.stream`) with adaptive thinking and prompt caching, then streams events to the browser. Before every request it checks the spending limit, and after it stores the estimated cost (`lib/server/budget.ts`, `lib/server/pricing.ts`).
 - `lib/prompts/teacher.ts` holds the teacher persona and the formatting rules the UI relies on.
 - `lib/pdf/quality.ts` holds the page-quality heuristics; `lib/persian.ts` handles Farsi normalization and tokenization.
 - The board is a ```` ```board ```` block in Claude's answer with one JSON object per line (`title`, `step`, `math`, `text`, `graph`, `draw`, `answer`), so steps appear while the answer streams. `lib/board/parse.ts` parses it, tolerating LaTeX backslashes the model forgot to escape. `lib/board/expr.ts` is a small safe expression compiler for graphs (no `eval`), and `components/board/` renders the chalkboard.
@@ -125,14 +125,15 @@ The chat and worker routes can run for up to 300 seconds, the Hobby plan limit. 
 
 Optional variables:
 - `VERCEL_AUTOMATION_BYPASS_SECRET` lets the worker call itself on preview deployments that have Vercel Authentication on.
-- `OCR_MODEL` sets the model that reads scanned pages.
+- `AI_BUDGET_USD` is the spending limit for all AI use, in US dollars (default `10`, `0` turns it off).
+- `OCR_MODEL` sets the model that reads scanned pages (default `claude-sonnet-4-6`).
 - `WORKER_BUDGET_MS` sets the length of one worker run (default 200000).
 
 ## Costs and notes
 
-- The default model is **Claude Opus 5.5** (`claude-opus-5-5`). Students can switch to Sonnet 5.5 or Haiku 5.5 in the model picker.
-- **Refusal fallback is on**: if a model declines a request for policy reasons, the API retries it automatically on a fallback model.
-- Reading a page with AI costs roughly a few cents on Opus 5.5. Set `OCR_MODEL` to a cheaper model if you prefer. Pages that extract cleanly cost nothing.
+- **Models:** the most capable model the app uses is **Claude Sonnet 4.6** (`claude-sonnet-4-6`, $3 / $15 per million input / output tokens), the default for chat and book reading. Students can switch to **Claude Haiku 5.5** (`claude-haiku-5-5`, $0.10 / $0.50) in the model picker; chat titles always use Haiku 5.5. The server accepts no other model.
+- **Spending limit (default $10):** the app estimates the cost of every response from its token usage and stores it in the `ai_usage` table. When the total reaches `AI_BUDGET_USD`, new questions get «بودجه هوش مصنوعی این برنامه تمام شده است…» and book reading stops sending pages to Claude (free text extraction continues). Open `/api/usage` to see what has been spent. The estimate can be a little off, and a request that is already running may finish over the limit, so also set a **monthly spend limit in the Anthropic Console** (Settings → Limits), which the API itself enforces.
+- Rough costs on Sonnet 4.6: a chat answer is about 1–5 US cents (more with web search or long book quotes); a scanned page read by AI is about 1–2 cents. Pages that extract cleanly cost nothing. `OCR_MODEL=claude-haiku-5-5` makes book reading much cheaper.
 - Book reading continues on the server after the page is closed. Keep the page open only until the upload bar finishes. If some pages could not be read (for example, the API was busy), «ادامه پردازش» on the book card tries them again.
 - Anyone who can open the site can upload and delete books. Add authentication before a public launch.
 

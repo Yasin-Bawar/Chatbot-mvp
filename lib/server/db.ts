@@ -43,6 +43,19 @@ const SCHEMA = [
   `ALTER TABLE books ADD COLUMN IF NOT EXISTS lease_until TIMESTAMPTZ`,
   `ALTER TABLE books ADD COLUMN IF NOT EXISTS error TEXT`,
   `ALTER TABLE books ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ NOT NULL DEFAULT now()`,
+  // Estimated cost of every Claude API response (spending limit, lib/server/budget.ts).
+  `CREATE TABLE IF NOT EXISTS ai_usage (
+    id BIGSERIAL PRIMARY KEY,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    kind TEXT NOT NULL,
+    model TEXT NOT NULL,
+    input_tokens INTEGER NOT NULL DEFAULT 0,
+    output_tokens INTEGER NOT NULL DEFAULT 0,
+    cache_write_tokens INTEGER NOT NULL DEFAULT 0,
+    cache_read_tokens INTEGER NOT NULL DEFAULT 0,
+    web_searches INTEGER NOT NULL DEFAULT 0,
+    cost_usd DOUBLE PRECISION NOT NULL DEFAULT 0
+  )`,
 ];
 
 /**

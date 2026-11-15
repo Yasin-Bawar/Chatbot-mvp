@@ -1,12 +1,12 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { z } from "zod";
-import { modelById } from "@/lib/models";
+import { LIGHT_MODEL } from "@/lib/models";
 import { getAnthropic, hasApiKey, isMockMode } from "@/lib/server/anthropic";
+import { assertBudget, recordUsage } from "@/lib/server/budget";
 
 const BodySchema = z.object({
   user: z.string().max(4000),
   assistant: z.string().max(4000).default(""),
-  model: z.string().optional(),
 });
 
 function fallbackTitle(text: string): string {
@@ -23,8 +23,10 @@ export async function POST(req: Request) {
   if (isMockMode() || !hasApiKey()) return Response.json({ title: fallbackTitle(user) });
 
   try {
+    // Titles always use the cheapest model.
+    await assertBudget();
     const response = await getAnthropic().messages.create({
-      model: modelById(parsed.data.model).id,
+      model: LIGHT_MODEL,
       max_tokens: 2000,
       output_config: { effort: "low" },
       system:
@@ -36,6 +38,7 @@ export async function POST(req: Request) {
         },
       ],
     });
+    await recordUsage("title", LIGHT_MODEL, response.usage);
     if (response.stop_reason === "refusal") return Response.json({ title: fallbackTitle(user) });
     const text = response.content
       .filter((b): b is Anthropic.TextBlock => b.type === "text")
@@ -45,7 +48,7 @@ export async function POST(req: Request) {
       .trim();
     return Response.json({ title: text ? text.slice(0, 60) : fallbackTitle(user) });
   } catch (err) {
-    console.error("title error", err);
+    if (!(err instanceof Error && err.name === "BudgetExceededError")) console.error("title error", err);
     return Response.json({ title: fallbackTitle(user) });
   }
 }

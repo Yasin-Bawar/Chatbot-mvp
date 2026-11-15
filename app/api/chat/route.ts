@@ -2,14 +2,8 @@ import Anthropic from "@anthropic-ai/sdk";
 import { z } from "zod";
 import { modelById } from "@/lib/models";
 import { buildContextPrompt, TEACHER_PERSONA } from "@/lib/prompts/teacher";
-import {
-  FALLBACK_BETA,
-  REFUSAL_TEXT,
-  friendlyError,
-  getAnthropic,
-  hasApiKey,
-  isMockMode,
-} from "@/lib/server/anthropic";
+import { REFUSAL_TEXT, friendlyError, getAnthropic, hasApiKey, isMockMode } from "@/lib/server/anthropic";
+import { assertBudget, recordUsage } from "@/lib/server/budget";
 import { listBooks, type Book } from "@/lib/server/books-repo";
 import { isDbConfigured } from "@/lib/server/db";
 import { runMockChat } from "@/lib/server/mock";
@@ -123,7 +117,7 @@ export async function POST(req: Request) {
         }
       } catch (err) {
         if (!abort.signal.aborted) {
-          console.error("chat error", err);
+          if (!(err instanceof Error && err.name === "BudgetExceededError")) console.error("chat error", err);
           send({ t: "error", message: friendlyError(err) });
         }
       } finally {
@@ -167,7 +161,13 @@ async function runChat(body: ChatRequestBody, send: (e: ChatStreamEvent) => void
 
   const tools: BetaToolUnion[] = [];
   if (hasBooks) tools.push(...BOOK_TOOLS);
-  if (body.options.webSearch) tools.push({ type: "web_search_20260209", name: "web_search", max_uses: 3 });
+  if (body.options.webSearch) {
+    tools.push(
+      model.webSearchTool === "web_search_20250305"
+        ? { type: "web_search_20250305", name: "web_search", max_uses: 3 }
+        : { type: "web_search_20260209", name: "web_search", max_uses: 3 },
+    );
+  }
 
   const system: Anthropic.Beta.BetaTextBlockParam[] = [
     { type: "text", text: TEACHER_PERSONA },
@@ -192,6 +192,8 @@ async function runChat(body: ChatRequestBody, send: (e: ChatStreamEvent) => void
   let jsonRetries = 0;
 
   for (let iteration = 0; iteration < MAX_ITERATIONS; iteration++) {
+    // Spending limit: every request (also each step of a tool loop) is checked.
+    await assertBudget();
     const stream = client.beta.messages.stream(
       {
         model: model.id,
@@ -202,8 +204,6 @@ async function runChat(body: ChatRequestBody, send: (e: ChatStreamEvent) => void
         thinking: { type: "adaptive", display: "summarized" },
         output_config: { effort },
         cache_control: { type: "ephemeral" },
-        betas: [FALLBACK_BETA],
-        fallbacks: "default",
       },
       { signal },
     );
@@ -240,6 +240,7 @@ async function runChat(body: ChatRequestBody, send: (e: ChatStreamEvent) => void
     try {
       message = await stream.finalMessage();
       jsonRetries = 0;
+      await recordUsage("chat", model.id, message.usage);
     } catch (err) {
       // With eager input streaming, a tool input that is not parseable JSON rejects
       // finalMessage(). Re-issue that turn (at most twice); rethrow API errors.

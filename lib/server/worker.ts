@@ -228,7 +228,8 @@ export async function processBook(row: BookRow, deadline: number): Promise<BookO
             }
           }
         } catch (err) {
-          if (err instanceof NoApiKeyError) {
+          // No key, or the spending limit is reached: stop asking Claude; the pages stay "not read".
+          if (err instanceof NoApiKeyError || (err instanceof Error && err.name === "BudgetExceededError")) {
             stopMessage = err.message;
             return;
           }

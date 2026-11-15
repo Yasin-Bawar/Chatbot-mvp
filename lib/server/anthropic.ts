@@ -15,11 +15,10 @@ export function isMockMode(): boolean {
   return process.env.MOCK_AI === "1";
 }
 
-/** Server-side refusal fallback, enabled by default (see README). */
-export const FALLBACK_BETA = "server-side-fallback-2026-07-01" as const;
 
 /** Maps SDK errors to short, friendly Dari messages for students. */
 export function friendlyError(err: unknown): string {
+  if (err instanceof Error && err.name === "BudgetExceededError") return err.message;
   if (err instanceof Anthropic.AuthenticationError || err instanceof Anthropic.PermissionDeniedError) {
     return "کلید API درست تنظیم نشده است. لطفاً به مسئول برنامه اطلاع دهید.";
   }
