@@ -1,24 +1,24 @@
 "use client";
 
 import { AnimatePresence, motion } from "motion/react";
-import { CloudUpload, Database, FileStack, Library, Search } from "lucide-react";
+import { CloudUpload, Database, FileStack, HardDrive, Library, Search } from "lucide-react";
 import { useEffect, useMemo, useRef, useState, type DragEvent } from "react";
-import { useBooksStore, type Book } from "@/lib/library/books-store";
-import { hasActiveJobs, resumeBook, useJobs } from "@/lib/pdf/process-book";
+import { isActivePhase, useBooksStore, type Book } from "@/lib/library/books-store";
+import { hasActiveUploads, useUploads } from "@/lib/library/upload";
 import { normalizeFa, toFaDigits } from "@/lib/persian";
 import { GRADES, SUBJECTS } from "@/lib/subjects";
 import { cn } from "@/lib/utils";
 import { PageViewer, type PageTarget } from "@/components/chat/PageViewer";
 import { toast } from "@/components/ui/Toast";
 import { BookCard } from "./BookCard";
-import { ProcessingCard } from "./ProcessingCard";
+import { ServerBookCard, UploadCard } from "./ProcessingCard";
 import { UploadDialog } from "./UploadDialog";
 
 const MAX_FILES = 30;
 
 export function LibraryScreen() {
-  const { books, configured, loaded, error, refresh } = useBooksStore();
-  const jobs = useJobs((s) => s.jobs);
+  const { books, configured, storage, loaded, error, refresh, followed } = useBooksStore();
+  const uploads = useUploads((s) => s.uploads);
   const [files, setFiles] = useState<File[]>([]);
   const [dragging, setDragging] = useState(false);
   const [query, setQuery] = useState("");
@@ -31,10 +31,20 @@ export function LibraryScreen() {
     void refresh();
   }, [refresh]);
 
-  // Warn before leaving while a book is being processed.
+  // While the server reads books (or files are uploading), refresh the progress every few seconds.
+  const working = books.some((b) => isActivePhase(b.phase)) || Object.keys(uploads).length > 0;
+  useEffect(() => {
+    if (!working) return;
+    const timer = window.setInterval(() => {
+      if (document.visibilityState === "visible") void refresh();
+    }, 3000);
+    return () => window.clearInterval(timer);
+  }, [working, refresh]);
+
+  // Warn before leaving only while a file is still uploading (reading continues on the server).
   useEffect(() => {
     const onBeforeUnload = (e: BeforeUnloadEvent) => {
-      if (hasActiveJobs()) e.preventDefault();
+      if (hasActiveUploads()) e.preventDefault();
     };
     window.addEventListener("beforeunload", onBeforeUnload);
     return () => window.removeEventListener("beforeunload", onBeforeUnload);
@@ -63,19 +73,25 @@ export function LibraryScreen() {
 
   const filtered = useMemo(() => {
     const q = normalizeFa(query.trim());
+    const uploadingIds = new Set(Object.values(uploads).map((u) => u.bookId));
     return books.filter(
       (b) =>
+        !uploadingIds.has(b.id) &&
         (!q || normalizeFa(b.title).includes(q)) &&
         (!subject || b.subject === subject) &&
         (!grade || b.grade === grade),
     );
-  }, [books, query, subject, grade]);
+  }, [books, uploads, query, subject, grade]);
 
   const presentSubjects = SUBJECTS.filter((s) => books.some((b) => b.subject === s.id));
   const totalPages = books.reduce((n, b) => n + b.pagesDone, 0);
-  const jobList = Object.values(jobs).sort((a, b) => a.order - b.order);
-  const doneCount = jobList.filter((j) => j.phase === "done").length;
-  const current = jobList.find((j) => j.phase !== "queued" && j.phase !== "done" && j.phase !== "error");
+  const uploadList = Object.values(uploads).sort((a, b) => a.order - b.order);
+  const serverList = books
+    .filter((b) => followed.includes(b.id))
+    .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+  const progressCount = uploadList.length + serverList.length;
+  const doneCount = serverList.filter((b) => b.phase === "done").length;
+  const current = serverList.find((b) => b.phase === "extracting" || b.phase === "ai");
   const previewBook = preview ? books.find((b) => b.id === preview.bookId) : undefined;
 
   return (
@@ -109,6 +125,19 @@ export function LibraryScreen() {
             <div className="text-sm leading-7 text-ink-2">
               <div className="mb-1 text-base font-bold text-ink">پایگاه داده تنظیم نشده است</div>
               برای ذخیره کتاب‌ها روی Vercel، در تنظیمات پروژه یک دیتابیس <b>Neon Postgres</b> اضافه کنید تا متغیر <code dir="ltr">DATABASE_URL</code> ساخته شود. سپس دوباره deploy کنید.
+            </div>
+          </div>
+        ) : storage === "none" ? (
+          <div className="card flex items-start gap-4 rounded-3xl p-6">
+            <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-[#fff4e0] text-[#b45309]">
+              <HardDrive className="size-5" />
+            </span>
+            <div className="text-sm leading-7 text-ink-2">
+              <div className="mb-1 text-base font-bold text-ink">فضای ذخیره فایل تنظیم نشده است</div>
+              برای اینکه کتاب‌ها حتی با بسته بودن سایت خوانده شوند، فایل PDF باید روی سرور بماند. در Vercel از بخش{" "}
+              <b>Storage</b> یک <b>Blob store</b> بسازید و به این پروژه وصل کنید (متغیر <code dir="ltr">BLOB_READ_WRITE_TOKEN</code>)،
+              سپس دوباره deploy کنید.
+              {books.length > 0 && <BookGridNote count={books.length} />}
             </div>
           </div>
         ) : (
@@ -163,20 +192,23 @@ export function LibraryScreen() {
               />
             </motion.div>
 
-            {jobList.length > 1 && (
+            {progressCount > 1 && (
               <div className="mt-5 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-ink-2">
                 <span className="font-semibold">
-                  {toFaDigits(doneCount)} از {toFaDigits(jobList.length)} کتاب آماده شد
+                  {toFaDigits(doneCount)} از {toFaDigits(progressCount)} کتاب آماده شد
                 </span>
                 {current && <span className="text-muted">· در حال خواندن: {current.title}</span>}
               </div>
             )}
 
             <AnimatePresence>
-              {jobList.length > 0 && (
+              {progressCount > 0 && (
                 <motion.div layout className="mt-3 grid items-start gap-3 md:grid-cols-2">
-                  {jobList.map((job) => (
-                    <ProcessingCard key={job.bookId} job={job} />
+                  {serverList.map((book) => (
+                    <ServerBookCard key={book.id} book={book} />
+                  ))}
+                  {uploadList.map((upload) => (
+                    <UploadCard key={upload.id} upload={upload} />
                   ))}
                 </motion.div>
               )}
@@ -230,7 +262,7 @@ export function LibraryScreen() {
               </AnimatePresence>
             </div>
 
-            {loaded && books.length === 0 && jobList.length === 0 && (
+            {loaded && books.length === 0 && progressCount === 0 && (
               <p className="mt-10 text-center text-sm leading-7 text-muted">
                 هنوز کتابی اضافه نشده است. اولین کتاب درسی را بالا بیاورید! 📚
               </p>
@@ -240,20 +272,16 @@ export function LibraryScreen() {
         )}
       </div>
 
-      <PageViewer
-        target={preview}
-        onClose={() => setPreview(null)}
-        onReread={
-          previewBook?.pdfUrl
-            ? (page) => {
-                setPreview(null);
-                toast.info(`صفحه ${toFaDigits(page)} دوباره خوانده می‌شود…`);
-                void resumeBook(previewBook, undefined, { forceAi: true, pages: [page] });
-              }
-            : undefined
-        }
-      />
+      <PageViewer target={preview} onClose={() => setPreview(null)} canReread={Boolean(previewBook?.hasFile)} />
       <UploadDialog files={files} onClose={() => setFiles([])} />
+    </div>
+  );
+}
+
+function BookGridNote({ count }: { count: number }) {
+  return (
+    <div className="mt-2 text-muted">
+      {toFaDigits(count)} کتابی که قبلاً اضافه شده‌اند، همچنان در گفتگو استفاده می‌شوند.
     </div>
   );
 }

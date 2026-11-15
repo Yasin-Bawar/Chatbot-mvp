@@ -11,7 +11,3 @@ export function apiError(err: unknown): Response {
   console.error(err);
   return Response.json({ error: "server_error", message: "مشکلی در سرور پیش آمد." }, { status: 500 });
 }
-
-export function blobEnabled(): boolean {
-  return Boolean(process.env.BLOB_READ_WRITE_TOKEN);
-}

@@ -15,6 +15,7 @@ import { Board } from "@/components/board/Board";
 import { CodeBlock } from "./CodeBlock";
 import { hastText } from "./hast";
 import { QuizCard } from "@/components/quiz/QuizCard";
+import { VisualCard } from "@/components/visuals/VisualCard";
 
 const remarkPlugins = [remarkGfm, remarkMath];
 const rehypePlugins: Options["rehypePlugins"] = [rehypeKatex, [rehypeHighlight, { detect: false }]];
@@ -68,6 +69,9 @@ const components: Components = {
     const text = hastText(code).replace(/\n$/, "");
     if (language === "quiz") return <QuizCard raw={text} streaming={streaming} />;
     if (language === "board") return <Board raw={text} streaming={streaming} />;
+    if (language === "globe" || language === "molecule" || language === "sim") {
+      return <VisualCard lang={language} raw={text} streaming={streaming} />;
+    }
     return (
       <CodeBlock language={language} code={text}>
         {renderHighlighted(code)}

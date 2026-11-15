@@ -1,9 +1,9 @@
 "use client";
 
 import { motion } from "motion/react";
-import { Check, CircleX, Clock3, LoaderCircle, Sparkles, X } from "lucide-react";
-import type { Job } from "@/lib/pdf/process-book";
-import { cancelQueued, useJobs } from "@/lib/pdf/process-book";
+import { Check, CircleX, Clock3, CloudUpload, LoaderCircle, Server, Sparkles, X } from "lucide-react";
+import { useBooksStore, type Book } from "@/lib/library/books-store";
+import { cancelQueued, useUploads, type Upload } from "@/lib/library/upload";
 import { toFaDigits } from "@/lib/persian";
 import { cn } from "@/lib/utils";
 
@@ -39,44 +39,55 @@ function Bar({ value }: { value: number }) {
   );
 }
 
-export function ProcessingCard({ job }: { job: Job }) {
-  const remove = useJobs((s) => s.remove);
-  if (job.phase === "queued") return <QueuedCard job={job} />;
-  const extractDone = job.phase === "ai" || job.phase === "done";
+const cardMotion = {
+  layout: true,
+  initial: { opacity: 0, y: 10 },
+  animate: { opacity: 1, y: 0 },
+  exit: { opacity: 0, scale: 0.97 },
+} as const;
+
+/** Progress of a book that the server is reading (keeps going with the page closed). */
+export function ServerBookCard({ book }: { book: Book }) {
+  const unfollow = useBooksStore((s) => s.unfollow);
+  const { phase } = book;
+  const finished = phase === "done" || phase === "error";
+  const failed = phase === "error";
+  const extractDone = phase === "ai" || phase === "done";
+  const total = Math.max(1, book.pageCount);
   const progress =
-    job.phase === "reading"
-      ? 0.03
-      : job.phase === "extracting"
-        ? (job.scanned / Math.max(1, job.total)) * (job.aiTotal ? 0.5 : 1)
-        : job.phase === "ai"
-          ? 0.5 + ((job.aiDone + job.aiFailed) / Math.max(1, job.aiTotal)) * 0.5
+    phase === "queued"
+      ? 0.04
+      : phase === "extracting"
+        ? 0.04 + (book.scanned / total) * (book.aiTotal ? 0.46 : 0.96)
+        : phase === "ai"
+          ? 0.5 + (book.aiDone / Math.max(1, book.aiTotal)) * 0.5
           : 1;
 
   return (
-    <motion.div
-      layout
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, scale: 0.97 }}
-      className="card rounded-3xl p-5"
-    >
+    <motion.div {...cardMotion} className="card rounded-3xl p-5">
       <div className="mb-4 flex items-center gap-3">
         <span
           className={cn(
             "grid size-10 place-items-center rounded-2xl text-white",
-            job.phase === "error" ? "bg-danger" : job.phase === "done" ? "bg-success" : "bg-gradient-brand",
+            failed ? "bg-danger" : phase === "done" ? "bg-success" : "bg-gradient-brand",
           )}
         >
-          {job.phase === "error" ? <CircleX className="size-5" /> : job.phase === "done" ? <Check className="size-5" /> : <Sparkles className="size-5" />}
+          {failed ? <CircleX className="size-5" /> : phase === "done" ? <Check className="size-5" /> : <Sparkles className="size-5" />}
         </span>
         <div className="min-w-0 flex-1">
-          <div className="truncate font-bold">{job.title}</div>
+          <div className="truncate font-bold">{book.title}</div>
           <div className="text-xs text-muted">
-            {job.phase === "done" ? "آماده است! دانا حالا از این کتاب درس می‌دهد. ✨" : job.phase === "error" ? "پردازش ناکام شد" : "تا پایان پردازش این صفحه را نبندید."}
+            {phase === "done"
+              ? "آماده است! دانا حالا از این کتاب درس می‌دهد. ✨"
+              : failed
+                ? "پردازش ناکام شد"
+                : phase === "queued"
+                  ? "در صف سرور — به‌زودی شروع می‌شود"
+                  : "در حال خواندن کتاب…"}
           </div>
         </div>
-        {(job.phase === "done" || job.phase === "error") && (
-          <button type="button" onClick={() => remove(job.bookId)} className="grid size-8 place-items-center rounded-lg text-muted hover:bg-surface-2" aria-label="بستن">
+        {finished && (
+          <button type="button" onClick={() => unfollow(book.id)} className="grid size-8 place-items-center rounded-lg text-muted hover:bg-surface-2" aria-label="بستن">
             <X className="size-4" />
           </button>
         )}
@@ -85,57 +96,91 @@ export function ProcessingCard({ job }: { job: Job }) {
       <Bar value={progress} />
 
       <div className="mt-4 grid gap-2.5">
-        <Step state={job.phase === "reading" ? "active" : "done"} label="خواندن فایل PDF" />
+        <Step state="done" label="بارگذاری فایل PDF" />
         <Step
-          state={job.phase === "extracting" ? "active" : extractDone ? "done" : "todo"}
+          state={phase === "extracting" ? "active" : extractDone ? "done" : "todo"}
           label="استخراج متن صفحات"
-          detail={job.total ? `${toFaDigits(job.scanned)} / ${toFaDigits(job.total)}` : undefined}
+          detail={book.pageCount ? `${toFaDigits(Math.min(book.scanned, book.pageCount))} / ${toFaDigits(book.pageCount)}` : undefined}
         />
-        {(job.aiTotal > 0 || job.phase === "ai") && (
+        {(book.aiTotal > 0 || phase === "ai") && (
           <Step
-            state={job.phase === "ai" ? "active" : job.phase === "done" ? "done" : "todo"}
+            state={phase === "ai" ? "active" : phase === "done" ? "done" : "todo"}
             label="خواندن صفحات اسکن‌شده با هوش مصنوعی"
-            detail={`${toFaDigits(job.aiDone)} / ${toFaDigits(job.aiTotal)}`}
+            detail={`${toFaDigits(book.aiDone)} / ${toFaDigits(book.aiTotal)}`}
           />
         )}
-        <Step state={job.phase === "done" ? "done" : "todo"} label="ذخیره در حافظه دانا" />
+        <Step state={phase === "done" ? "done" : "todo"} label="ذخیره در حافظه دانا" />
       </div>
 
-      {job.message && (
-        <p className={cn("mt-4 rounded-2xl px-4 py-2.5 text-sm leading-7", job.phase === "error" ? "bg-danger-soft text-[#9f1d22]" : "bg-[#fff7e6] text-[#92400e]")}>
-          {job.message}
+      {!finished && (
+        <p className="mt-4 flex items-center gap-2 rounded-2xl bg-success-soft px-4 py-2.5 text-[13px] leading-6 text-success">
+          <Server className="size-4 shrink-0" />
+          پردازش در سرور ادامه دارد؛ می‌توانید این صفحه را ببندید ✓
+        </p>
+      )}
+      {finished && book.error && (
+        <p className={cn("mt-4 rounded-2xl px-4 py-2.5 text-sm leading-7", failed ? "bg-danger-soft text-[#9f1d22]" : "bg-[#fff7e6] text-[#92400e]")}>
+          {book.error}
         </p>
       )}
     </motion.div>
   );
 }
 
-/** A book waiting for its turn in the bulk-upload queue. */
-function QueuedCard({ job }: { job: Job }) {
+/** A file that is still being sent from this browser (or waiting for its turn). */
+export function UploadCard({ upload }: { upload: Upload }) {
+  const remove = useUploads((s) => s.remove);
+
+  if (upload.state === "waiting") {
+    return (
+      <motion.div {...cardMotion} className="card flex items-center gap-3 rounded-3xl p-4 opacity-80">
+        <span className="grid size-10 shrink-0 place-items-center rounded-2xl bg-surface-2 text-muted">
+          <Clock3 className="size-5" />
+        </span>
+        <div className="min-w-0 flex-1">
+          <div className="truncate font-bold">{upload.title}</div>
+          <div className="text-xs text-muted">در صف بارگذاری — منتظر نوبت</div>
+        </div>
+        <button
+          type="button"
+          onClick={() => cancelQueued(upload.id)}
+          className="grid size-9 shrink-0 place-items-center rounded-xl text-muted transition hover:bg-danger-soft hover:text-danger"
+          aria-label="حذف از صف"
+          title="حذف از صف"
+        >
+          <X className="size-4" />
+        </button>
+      </motion.div>
+    );
+  }
+
+  const failed = upload.state === "error";
   return (
-    <motion.div
-      layout
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, scale: 0.97 }}
-      className="card flex items-center gap-3 rounded-3xl p-4 opacity-80"
-    >
-      <span className="grid size-10 shrink-0 place-items-center rounded-2xl bg-surface-2 text-muted">
-        <Clock3 className="size-5" />
-      </span>
-      <div className="min-w-0 flex-1">
-        <div className="truncate font-bold">{job.title}</div>
-        <div className="text-xs text-muted">در صف — منتظر نوبت</div>
+    <motion.div {...cardMotion} className="card rounded-3xl p-5">
+      <div className="mb-4 flex items-center gap-3">
+        <span className={cn("grid size-10 place-items-center rounded-2xl text-white", failed ? "bg-danger" : "bg-gradient-brand")}>
+          {failed ? <CircleX className="size-5" /> : <CloudUpload className="size-5" />}
+        </span>
+        <div className="min-w-0 flex-1">
+          <div className="truncate font-bold">{upload.title}</div>
+          <div className="text-xs text-muted">
+            {failed ? "بارگذاری ناکام شد" : `در حال بارگذاری… ${toFaDigits(Math.round(upload.progress * 100))}٪`}
+          </div>
+        </div>
+        {failed && (
+          <button type="button" onClick={() => remove(upload.id)} className="grid size-8 place-items-center rounded-lg text-muted hover:bg-surface-2" aria-label="بستن">
+            <X className="size-4" />
+          </button>
+        )}
       </div>
-      <button
-        type="button"
-        onClick={() => cancelQueued(job.bookId)}
-        className="grid size-9 shrink-0 place-items-center rounded-xl text-muted transition hover:bg-danger-soft hover:text-danger"
-        aria-label="حذف از صف"
-        title="حذف از صف"
-      >
-        <X className="size-4" />
-      </button>
+      <Bar value={failed ? 0 : upload.progress} />
+      {failed ? (
+        upload.message && <p className="mt-4 rounded-2xl bg-danger-soft px-4 py-2.5 text-sm leading-7 text-[#9f1d22]">{upload.message}</p>
+      ) : (
+        <p className="mt-4 rounded-2xl bg-[#fff7e6] px-4 py-2.5 text-[13px] leading-6 text-[#92400e]">
+          تا پایان بارگذاری این صفحه را باز نگه دارید. بعد از آن، خواندن کتاب در سرور ادامه پیدا می‌کند.
+        </p>
+      )}
     </motion.div>
   );
 }

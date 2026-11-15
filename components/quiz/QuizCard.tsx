@@ -1,9 +1,9 @@
 "use client";
 
-import { AnimatePresence, motion } from "motion/react";
+import { AnimatePresence } from "motion/react";
 import { ListChecks, Play, RotateCcw } from "lucide-react";
 import { usePathname } from "next/navigation";
-import { memo, useCallback, useContext, useEffect, useId, useMemo, useState } from "react";
+import { memo, useCallback, useContext, useId, useMemo, useState } from "react";
 import { MessageContext } from "@/lib/chat/message-context";
 import { sendUserMessage, whenIdle } from "@/lib/chat/send";
 import { useChatStore } from "@/lib/chat/store";
@@ -14,12 +14,9 @@ import { percent, resultMessage } from "@/lib/quiz/result";
 import type { QuizResult } from "@/lib/quiz/types";
 import { ExamOverlay } from "./ExamOverlay";
 
-/** Seconds to wait after a new quiz has fully arrived before it opens full screen. */
-const AUTO_OPEN_SECONDS = 2;
-
 /**
- * A ```quiz block in the chat: a compact exam card. A new quiz opens full
- * screen by itself ~2 s after it arrives; the result is sent back to Dana.
+ * A ```quiz block in the chat: a compact exam card. The exam opens full
+ * screen only when the student presses «شروع آزمون»; the result is sent back to Dana.
  */
 export const QuizCard = memo(function QuizCard({ raw, streaming }: { raw: string; streaming: boolean }) {
   const id = useId();
@@ -28,16 +25,12 @@ export const QuizCard = memo(function QuizCard({ raw, streaming }: { raw: string
   const quiz = useMemo(() => parseQuiz(raw), [raw]);
 
   const openId = useOverlays((s) => s.quiz);
-  const boardOpen = useOverlays((s) => s.board !== null);
   const open = openId === id && pathname === "/";
 
-  // "waiting" = a new quiz that will open by itself; "done" = never auto-open (history, cancelled, opened).
-  const [auto, setAuto] = useState<"waiting" | "done">(() => (streaming ? "waiting" : "done"));
   const [result, setResult] = useState<QuizResult | null>(null);
   const [attempt, setAttempt] = useState(0);
 
   const show = useCallback(() => {
-    setAuto("done");
     setAttempt((a) => a + 1);
     useOverlays.setState({ quiz: id });
   }, [id]);
@@ -46,12 +39,6 @@ export const QuizCard = memo(function QuizCard({ raw, streaming }: { raw: string
     if (useOverlays.getState().quiz === id) useOverlays.setState({ quiz: null });
   }, [id]);
 
-  const counting = auto === "waiting" && Boolean(quiz) && !boardOpen && pathname === "/";
-  useEffect(() => {
-    if (!counting) return;
-    const t = setTimeout(show, AUTO_OPEN_SECONDS * 1000);
-    return () => clearTimeout(t);
-  }, [counting, show]);
 
   const send = useCallback(
     async (r: QuizResult) => {
@@ -90,21 +77,6 @@ export const QuizCard = memo(function QuizCard({ raw, streaming }: { raw: string
       </div>
 
       <div className="grid gap-2.5 p-3.5">
-        <AnimatePresence initial={false}>
-          {counting && (
-            <motion.div key="countdown" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}>
-              <div className="flex items-center justify-between gap-3 text-[13.5px]">
-                <span className="shimmer font-semibold">آزمون تا چند لحظه دیگر شروع می‌شود…</span>
-                <button type="button" onClick={() => setAuto("done")} className="shrink-0 font-semibold text-muted underline-offset-4 hover:text-ink hover:underline">
-                  بعداً
-                </button>
-              </div>
-              <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-[#e8e6fb]">
-                <div className="quiz-countdown h-full rounded-full" style={{ animationDuration: `${AUTO_OPEN_SECONDS}s` }} />
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
 
         {result && (
           <div className="flex items-center gap-3 rounded-2xl bg-surface-2 px-3.5 py-2.5">

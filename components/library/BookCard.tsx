@@ -6,8 +6,8 @@ import { BookOpen, Ellipsis, Eye, MessageSquare, Play, Trash2 } from "lucide-rea
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import { useChatStore } from "@/lib/chat/store";
-import { useBooksStore, type Book } from "@/lib/library/books-store";
-import { resumeBook, useJobs } from "@/lib/pdf/process-book";
+import { isActivePhase, useBooksStore, type Book } from "@/lib/library/books-store";
+import { resumeWithFile, startBook } from "@/lib/library/upload";
 import { toFaDigits } from "@/lib/persian";
 import { subjectById } from "@/lib/subjects";
 import { cn } from "@/lib/utils";
@@ -17,15 +17,16 @@ import { toast } from "@/components/ui/Toast";
 export function BookCard({ book, onPreview }: { book: Book; onPreview: (book: Book) => void }) {
   const router = useRouter();
   const subject = subjectById(book.subject);
-  const job = useJobs((s) => s.jobs[book.id]);
   const removeLocal = useBooksStore((s) => s.removeLocal);
   const updateSettings = useChatStore((s) => s.updateSettings);
   const setActiveChat = useChatStore((s) => s.setActiveChat);
   const fileRef = useRef<HTMLInputElement>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
 
-  const running = job && job.phase !== "done" && job.phase !== "error";
-  const incomplete = !running && book.pagesDone < book.pageCount;
+  const running = isActivePhase(book.phase);
+  const uploading = book.phase === "uploading";
+  const incomplete =
+    !running && (uploading || book.pagesDone < book.pageCount || book.failedPages > 0 || (book.status === "error" && book.pagesDone === 0));
   const usable = book.pagesDone > 0;
 
   const status = running
@@ -36,9 +37,17 @@ export function BookCard({ book, onPreview }: { book: Book; onPreview: (book: Bo
         ? { label: "ناتمام", cls: "bg-[#fff4e0] text-[#b45309]" }
         : { label: "آماده", cls: "bg-success-soft text-success" };
 
-  const resume = () => {
-    if (book.pdfUrl) void resumeBook(book);
-    else fileRef.current?.click();
+  const resume = async () => {
+    if (!book.hasFile) {
+      fileRef.current?.click();
+      return;
+    }
+    try {
+      await startBook(book.id);
+      toast.success("خواندن کتاب در سرور دوباره شروع شد.");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "شروع نشد. دوباره امتحان کنید.");
+    }
   };
 
   const ask = () => {
@@ -74,7 +83,7 @@ export function BookCard({ book, onPreview }: { book: Book; onPreview: (book: Bo
         hidden
         onChange={(e) => {
           const file = e.target.files?.[0];
-          if (file) void resumeBook(book, file);
+          if (file) void resumeWithFile(book, file);
           e.target.value = "";
         }}
       />
@@ -117,7 +126,6 @@ export function BookCard({ book, onPreview }: { book: Book; onPreview: (book: Bo
                 )}
                 <DropdownMenu.Item
                   onSelect={() => setConfirmDelete(true)}
-                  disabled={Boolean(running)}
                   className="flex cursor-pointer items-center gap-2 rounded-xl px-3 py-2 text-sm text-danger outline-none data-[disabled]:opacity-40 data-[highlighted]:bg-danger-soft"
                 >
                   <Trash2 className="size-4" /> حذف کتاب

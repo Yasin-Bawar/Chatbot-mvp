@@ -4,7 +4,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { FileText, Sparkles, TriangleAlert, X } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useBooksStore } from "@/lib/library/books-store";
-import { addBooks } from "@/lib/pdf/process-book";
+import { addBooks } from "@/lib/library/upload";
 import { normalizeFa, toFaDigits } from "@/lib/persian";
 import { cleanTitle, GRADES, guessGrade, guessSubject, SUBJECTS } from "@/lib/subjects";
 import { cn } from "@/lib/utils";
@@ -107,7 +107,9 @@ function UploadForm({ files, onClose }: { files: File[]; onClose: () => void }) 
       forceAi,
     );
     toast.success(
-      rows.length > 1 ? `${toFaDigits(rows.length)} کتاب به صف پردازش اضافه شد. یکی پس از دیگری خوانده می‌شوند.` : "پردازش کتاب شروع شد.",
+      rows.length > 1
+        ? `${toFaDigits(rows.length)} کتاب در حال بارگذاری است. بعد از بارگذاری، سرور آن‌ها را می‌خواند؛ لازم نیست صفحه باز بماند.`
+        : "کتاب در حال بارگذاری است. بعد از بارگذاری، سرور آن را می‌خواند؛ لازم نیست صفحه باز بماند.",
     );
     onClose();
   };

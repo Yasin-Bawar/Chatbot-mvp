@@ -1,0 +1,165 @@
+"use client";
+
+import { useEffect, useRef } from "react";
+
+export const FONT = '"Vazirmatn Variable", "Vazirmatn", Tahoma, sans-serif';
+
+export const C = {
+  bg: "#0f1533",
+  grid: "rgba(148,163,255,0.08)",
+  ground: "#2a3366",
+  text: "#e6e9ff",
+  muted: "rgba(230,233,255,0.6)",
+  accent: "#fde047",
+  red: "#f87171",
+  blue: "#60a5fa",
+  green: "#4ade80",
+  orange: "#fb923c",
+  violet: "#a78bfa",
+  pink: "#f472b6",
+  cyan: "#22d3ee",
+};
+
+export type DrawFn = (ctx: CanvasRenderingContext2D, w: number, h: number, dt: number, time: number) => void;
+
+/**
+ * Keeps a canvas sized to its parent (sharp on high-density screens) and calls
+ * `draw` every frame. `draw` may change between renders; the newest is used.
+ */
+export function useAnimatedCanvas(draw: DrawFn) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const drawRef = useRef(draw);
+  useEffect(() => {
+    drawRef.current = draw;
+  });
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    const parent = canvas?.parentElement;
+    if (!canvas || !parent) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    let w = 1;
+    let h = 1;
+    const resize = () => {
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      w = Math.max(1, parent.clientWidth);
+      h = Math.max(1, parent.clientHeight);
+      canvas.width = Math.round(w * dpr);
+      canvas.height = Math.round(h * dpr);
+      canvas.style.width = `${w}px`;
+      canvas.style.height = `${h}px`;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    };
+    resize();
+    const ro = new ResizeObserver(resize);
+    ro.observe(parent);
+    let raf = 0;
+    let last = performance.now();
+    const loop = (now: number) => {
+      raf = requestAnimationFrame(loop);
+      if (document.hidden) {
+        last = now;
+        return;
+      }
+      const dt = Math.min(0.05, (now - last) / 1000);
+      last = now;
+      ctx.clearRect(0, 0, w, h);
+      drawRef.current(ctx, w, h, dt, now / 1000);
+    };
+    raf = requestAnimationFrame(loop);
+    return () => {
+      cancelAnimationFrame(raf);
+      ro.disconnect();
+    };
+  }, []);
+
+  return canvasRef;
+}
+
+export function text(
+  ctx: CanvasRenderingContext2D,
+  value: string,
+  x: number,
+  y: number,
+  opts: { size?: number; color?: string; align?: CanvasTextAlign; weight?: number; baseline?: CanvasTextBaseline; bg?: string } = {},
+) {
+  ctx.save();
+  ctx.font = `${opts.weight ?? 600} ${opts.size ?? 13}px ${FONT}`;
+  ctx.textAlign = opts.align ?? "center";
+  ctx.textBaseline = opts.baseline ?? "middle";
+  // Labels with Dari words are right-to-left; numbers, units and formulas left-to-right.
+  ctx.direction = /[\u0621-\u064A\u0671-\u06D3\u06FA-\u06FF]/.test(value) ? "rtl" : "ltr";
+  if (opts.bg) {
+    const m = ctx.measureText(value);
+    const pw = m.width + 12;
+    const ph = (opts.size ?? 13) + 8;
+    const left = opts.align === "left" ? x - 6 : opts.align === "right" ? x - m.width - 6 : x - pw / 2;
+    ctx.fillStyle = opts.bg;
+    ctx.beginPath();
+    ctx.roundRect(left, y - ph / 2, pw, ph, 7);
+    ctx.fill();
+  }
+  ctx.fillStyle = opts.color ?? C.text;
+  ctx.fillText(value, x, y);
+  ctx.restore();
+}
+
+export function arrow(
+  ctx: CanvasRenderingContext2D,
+  x1: number,
+  y1: number,
+  x2: number,
+  y2: number,
+  color: string,
+  width = 3,
+) {
+  const len = Math.hypot(x2 - x1, y2 - y1);
+  if (len < 2) return;
+  const head = Math.min(12, len * 0.4);
+  const angle = Math.atan2(y2 - y1, x2 - x1);
+  ctx.save();
+  ctx.strokeStyle = color;
+  ctx.fillStyle = color;
+  ctx.lineWidth = width;
+  ctx.lineCap = "round";
+  ctx.beginPath();
+  ctx.moveTo(x1, y1);
+  ctx.lineTo(x2 - Math.cos(angle) * head * 0.7, y2 - Math.sin(angle) * head * 0.7);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(x2, y2);
+  ctx.lineTo(x2 - head * Math.cos(angle - 0.45), y2 - head * Math.sin(angle - 0.45));
+  ctx.lineTo(x2 - head * Math.cos(angle + 0.45), y2 - head * Math.sin(angle + 0.45));
+  ctx.closePath();
+  ctx.fill();
+  ctx.restore();
+}
+
+export function grid(ctx: CanvasRenderingContext2D, w: number, h: number, step = 32) {
+  ctx.save();
+  ctx.strokeStyle = C.grid;
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  for (let x = 0; x < w; x += step) {
+    ctx.moveTo(x + 0.5, 0);
+    ctx.lineTo(x + 0.5, h);
+  }
+  for (let y = 0; y < h; y += step) {
+    ctx.moveTo(0, y + 0.5);
+    ctx.lineTo(w, y + 0.5);
+  }
+  ctx.stroke();
+  ctx.restore();
+}
+
+export function glowCircle(ctx: CanvasRenderingContext2D, x: number, y: number, r: number, color: string, glow = 16) {
+  ctx.save();
+  ctx.shadowColor = color;
+  ctx.shadowBlur = glow;
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.arc(x, y, r, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+}

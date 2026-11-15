@@ -1,0 +1,56 @@
+/**
+ * Interactive visuals Dana can put in an answer, each as one JSON object in a
+ * fenced block: ```globe, ```molecule or ```sim. They open full screen.
+ */
+
+export type LatLon = { lat: number; lon: number };
+
+export interface GlobeSpec {
+  kind: "globe";
+  title: string;
+  note?: string;
+  /** Where the camera looks first. */
+  focus: LatLon | null;
+  /** 1 = whole Earth … 4 = close (a region). */
+  zoom: number;
+  /** Countries to colour (English names from world-atlas, aliases and Dari names accepted). */
+  highlight: { name: string; label?: string; color?: string }[];
+  markers: { lat: number; lon: number; label: string; color?: string }[];
+  routes: { points: [number, number][]; label?: string; color?: string }[];
+}
+
+export interface MoleculeAtom {
+  el: string;
+  /** Formal charge, e.g. -1 for O⁻ (affects lone pairs). */
+  charge?: number;
+}
+
+export interface MoleculeSpec {
+  kind: "molecule";
+  title: string;
+  note?: string;
+  /** A built-in molecule (see lib/visuals/molecules.ts), e.g. "water". */
+  preset?: string;
+  formula?: string;
+  atoms: MoleculeAtom[];
+  /** [atomIndexA, atomIndexB, bondOrder?] — indices are 0-based. */
+  bonds: [number, number, number][];
+}
+
+export type SimType = "projectile" | "pendulum" | "incline" | "circuit" | "wave" | "states";
+
+export interface SimSpec {
+  kind: "sim";
+  type: SimType;
+  title: string;
+  note?: string;
+  /** Starting values for the sliders (units as in lib/visuals/sims.ts). */
+  params: Record<string, number>;
+  /** For "states": the substance and its melting / boiling points in °C. */
+  substance?: { name: string; melt: number; boil: number };
+}
+
+export type VisualSpec = GlobeSpec | MoleculeSpec | SimSpec;
+export type VisualKind = VisualSpec["kind"];
+
+export const VISUAL_LANGS: readonly VisualKind[] = ["globe", "molecule", "sim"];

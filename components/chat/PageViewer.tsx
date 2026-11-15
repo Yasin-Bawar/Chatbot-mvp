@@ -6,6 +6,7 @@ import { useBooksStore } from "@/lib/library/books-store";
 import { toFaDigits } from "@/lib/persian";
 import { Markdown } from "@/components/markdown/Markdown";
 import { Dialog } from "@/components/ui/Dialog";
+import { toast } from "@/components/ui/Toast";
 
 export interface PageTarget {
   bookId: string;
@@ -17,12 +18,12 @@ export interface PageTarget {
 export function PageViewer({
   target,
   onClose,
-  onReread,
+  canReread = false,
 }: {
   target: PageTarget | null;
   onClose: () => void;
-  /** When set, shows a "read this page again with AI" button. */
-  onReread?: (page: number) => void;
+  /** Shows a "read this page again with AI" button (books with a stored PDF). */
+  canReread?: boolean;
 }) {
   return (
     <Dialog
@@ -31,14 +32,15 @@ export function PageViewer({
       title={target ? `📖 ${target.title}` : ""}
       className="max-w-2xl"
     >
-      {target && <PageBody key={`${target.bookId}`} target={target} onReread={onReread} />}
+      {target && <PageBody key={`${target.bookId}`} target={target} canReread={canReread} />}
     </Dialog>
   );
 }
 
-function PageBody({ target, onReread }: { target: PageTarget; onReread?: (page: number) => void }) {
+function PageBody({ target, canReread }: { target: PageTarget; canReread: boolean }) {
   const [page, setPage] = useState(target.page);
   const [state, setState] = useState<{ page: number; text: string | null; error?: boolean } | null>(null);
+  const [rereading, setRereading] = useState<number | null>(null);
   const book = useBooksStore((s) => s.books.find((b) => b.id === target.bookId));
   const loading = state?.page !== page;
 
@@ -54,6 +56,26 @@ function PageBody({ target, onReread }: { target: PageTarget; onReread?: (page: 
       cancelled = true;
     };
   }, [target.bookId, page]);
+
+  const reread = async () => {
+    const n = page;
+    setRereading(n);
+    try {
+      const res = await fetch(`/api/books/${target.bookId}/reread`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ page: n }),
+      });
+      const data = (await res.json().catch(() => ({}))) as { page?: { content: string }; message?: string };
+      if (!res.ok || !data.page) throw new Error(data.message || "خوانده نشد.");
+      setState({ page: n, text: data.page.content });
+      toast.success(`صفحه ${toFaDigits(n)} دوباره خوانده شد.`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "خوانده نشد.");
+    } finally {
+      setRereading(null);
+    }
+  };
 
   return (
     <div className="flex flex-col">
@@ -87,13 +109,22 @@ function PageBody({ target, onReread }: { target: PageTarget; onReread?: (page: 
           <p className="py-10 text-center text-sm text-muted">{state?.error ? "بارگذاری نشد." : "متنی برای این صفحه ذخیره نشده است."}</p>
         )}
       </div>
-      {onReread && (
+      {canReread && (
         <button
           type="button"
-          onClick={() => onReread(page)}
-          className="mx-5 mb-3 flex items-center justify-center gap-2 rounded-2xl border border-line px-4 py-2.5 text-sm font-semibold text-ink-2 transition hover:border-primary/30 hover:text-primary"
+          onClick={reread}
+          disabled={rereading !== null}
+          className="mx-5 mb-3 flex items-center justify-center gap-2 rounded-2xl border border-line px-4 py-2.5 text-sm font-semibold text-ink-2 transition hover:border-primary/30 hover:text-primary disabled:opacity-60"
         >
-          <Sparkles className="size-4" /> خواندن دوباره این صفحه با هوش مصنوعی
+          {rereading === page ? (
+            <>
+              <LoaderCircle className="size-4 animate-spin" /> <span className="shimmer">در حال خواندن صفحه…</span>
+            </>
+          ) : (
+            <>
+              <Sparkles className="size-4" /> خواندن دوباره این صفحه با هوش مصنوعی
+            </>
+          )}
         </button>
       )}
       {book?.pdfUrl && (
