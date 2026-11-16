@@ -7,6 +7,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 // Throwaway database and upload folder; Claude is mocked.
 process.env.PGLITE_DIR = "memory";
 process.env.MOCK_AI = "1";
+process.env.AI_BOOK_READING = "1";
 let uploadDir = "";
 
 const repo = await import("@/lib/server/books-repo");
@@ -110,6 +111,24 @@ describe("background book worker", () => {
     await drain();
     const pages = await repo.getPages(id, 1, 3);
     expect(pages.every((p) => p.method === "ai")).toBe(true);
+  });
+
+  it("with AI reading off, saves only the free text and skips scanned pages", async () => {
+    process.env.AI_BOOK_READING = "0";
+    try {
+      const id = await addBook(["text", "blank", "text"], { forceAi: true });
+      await drain();
+      const book = (await repo.getBook(id))!;
+      expect(book.phase).toBe("done");
+      expect(book.status).toBe("ready");
+      expect(book.pagesDone).toBe(2);
+      expect(book.failedPages).toBe(1);
+      expect(book.error).toContain("خاموش");
+      const pages = await repo.getPages(id, 1, 3);
+      expect(pages.every((p) => p.method === "text")).toBe(true);
+    } finally {
+      process.env.AI_BOOK_READING = "1";
+    }
   });
 
   it("reports a missing file instead of retrying forever", async () => {

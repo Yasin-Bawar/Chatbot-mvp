@@ -8,7 +8,7 @@ import {
   type BookRow,
   type PageRow,
 } from "./books-repo";
-import { NoApiKeyError, readPagesWithClaude } from "./ocr";
+import { aiBookReadingEnabled, NoApiKeyError, readPagesWithClaude } from "./ocr";
 import { openForSlicing, openPdf, pageText, slicePages } from "./pdf";
 import { loadPdf } from "./storage";
 
@@ -100,6 +100,8 @@ export async function processBook(row: BookRow, deadline: number): Promise<BookO
   }
 
   const existing = new Set(await getPageNumbers(id));
+  const aiReading = aiBookReadingEnabled();
+  const forceAi = row.force_ai && aiReading;
   const pending = new Set<number>(row.pending_ai ?? []);
   const failed = new Set<number>(row.failed_ai ?? []);
   let scanned = Number(row.scanned ?? 0);
@@ -148,7 +150,7 @@ export async function processBook(row: BookRow, deadline: number): Promise<BookO
         }
         const n = scanned + 1;
         if (!existing.has(n) && !pending.has(n)) {
-          if (row.force_ai) {
+          if (forceAi) {
             pending.add(n);
           } else {
             const raw = await pageText(pdf, n).catch(() => "");
@@ -171,7 +173,7 @@ export async function processBook(row: BookRow, deadline: number): Promise<BookO
 
   // ---- Phase 2: pages Claude has to read (scanned, garbled or reversed text) ----
   // Pages that were saved meanwhile (e.g. re-read by hand) are skipped.
-  for (const n of pending) if (existing.has(n) && !row.force_ai) pending.delete(n);
+  for (const n of pending) if (existing.has(n) && !forceAi) pending.delete(n);
   const aiTotal = aiDone + pending.size;
   await updateProgress(id, {
     phase: pending.size ? "ai" : "extracting",
@@ -181,6 +183,12 @@ export async function processBook(row: BookRow, deadline: number): Promise<BookO
   });
 
   let stopMessage: string | null = null;
+  if (pending.size && !aiReading) {
+    // AI reading is switched off (it costs credits): leave these pages unread.
+    for (const n of pending) failed.add(n);
+    pending.clear();
+    stopMessage = `${failed.size} صفحه اسکن‌شده است و خوانده نشد (خواندن با هوش مصنوعی خاموش است).`;
+  }
   if (pending.size) {
     const source = await openForSlicing(data);
     const todo = [...pending].sort((a, b) => a - b);

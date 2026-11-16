@@ -2,7 +2,7 @@ import { z } from "zod";
 import { friendlyError } from "@/lib/server/anthropic";
 import { getBookRow, upsertPages } from "@/lib/server/books-repo";
 import { apiError } from "@/lib/server/http";
-import { NoApiKeyError, readPagesWithClaude } from "@/lib/server/ocr";
+import { aiBookReadingEnabled, NoApiKeyError, readPagesWithClaude } from "@/lib/server/ocr";
 import { openForSlicing, slicePages } from "@/lib/server/pdf";
 import { loadPdf } from "@/lib/server/storage";
 
@@ -16,6 +16,9 @@ export async function POST(req: Request, ctx: RouteContext<"/api/books/[id]/rere
   const parsed = BodySchema.safeParse(await req.json().catch(() => null));
   if (!parsed.success) return Response.json({ error: "invalid_input" }, { status: 400 });
   const { page } = parsed.data;
+  if (!aiBookReadingEnabled()) {
+    return Response.json({ error: "ai_reading_off", message: "خواندن صفحه با هوش مصنوعی خاموش است." }, { status: 403 });
+  }
 
   let pdfBase64: string;
   try {

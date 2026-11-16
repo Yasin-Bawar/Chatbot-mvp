@@ -116,7 +116,7 @@ To try the UI without an API key, set `MOCK_AI=1` in `.env.local`. Demo answers 
    - **Create database branch for deployment:** leave both unchecked, so every deployment uses the same books.
    - **Custom Prefix:** type `DATABASE`, so the variable is `DATABASE_URL`. The app also accepts `STORAGE_URL` if you keep the default.
    - **Sensitive:** leave on, then click **Connect**.
-3. Add a **Blob** store with **public** access. This creates `BLOB_READ_WRITE_TOKEN`. It is **required**: the server reads the books from there in the background. Without it, the Library shows a setup notice.
+3. Add a **Blob** store with **public** access and connect it to the project. Both kinds of connection work: a read-write token (`BLOB_READ_WRITE_TOKEN`) or the newer keyless one (`BLOB_STORE_ID` + `BLOB_WEBHOOK_PUBLIC_KEY`, uploads through presigned URLs), also with a custom prefix. It is **required**: the server reads the books from there in the background. Without it, the Library shows a setup notice.
 4. In **Settings → Environment Variables**, add `ANTHROPIC_API_KEY`.
 5. **Redeploy** (Deployments → … → Redeploy): new variables only apply to new deployments. Tables are created automatically on the first request.
 6. Check: `https://<your-site>/api/books` should return `"configured":true`.
@@ -125,6 +125,7 @@ The chat and worker routes can run for up to 300 seconds, the Hobby plan limit. 
 
 Optional variables:
 - `VERCEL_AUTOMATION_BYPASS_SECRET` lets the worker call itself on preview deployments that have Vercel Authentication on.
+- `AI_BOOK_READING=1` lets Claude read scanned or broken book pages. It is **off by default** to save credits: then only the free text inside the PDF is saved and scanned pages are skipped (the book card says how many).
 - `AI_BUDGET_USD` is the spending limit for all AI use, in US dollars (default `10`, `0` turns it off).
 - `OCR_MODEL` sets the model that reads scanned pages (default `claude-sonnet-4-6`).
 - `WORKER_BUDGET_MS` sets the length of one worker run (default 200000).

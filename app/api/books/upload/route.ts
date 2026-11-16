@@ -1,29 +1,58 @@
-import { handleUpload, type HandleUploadBody } from "@vercel/blob/client";
-import { blobToken } from "@/lib/server/storage";
+import { issueSignedToken } from "@vercel/blob";
+import { handleUpload, handleUploadPresigned, type HandleUploadBody, type HandleUploadPresignedBody } from "@vercel/blob/client";
+import { blobMode, blobStoreId, blobToken, blobWebhookPublicKey } from "@/lib/server/storage";
 
-/** Issues client-upload tokens so large PDFs go straight from the browser to Vercel Blob. */
+const MAX_BYTES = 300 * 1024 * 1024;
+const PDF = ["application/pdf"];
+
+/** Only book files may be uploaded: books/<bookId>.pdf */
+function checkPathname(pathname: string) {
+  if (!/^books\/[\w-]+\.pdf$/.test(pathname)) throw new Error("invalid pathname");
+}
+
+/**
+ * Lets the browser upload a large PDF straight to Vercel Blob (Vercel functions
+ * accept at most 4.5 MB). Works with both kinds of Blob connection:
+ * a read-write token (client tokens) or a keyless store (presigned URLs).
+ */
 export async function POST(request: Request) {
-  const token = blobToken();
-  if (!token) {
-    return Response.json({ error: "blob_not_configured" }, { status: 503 });
-  }
-  const body = (await request.json()) as HandleUploadBody;
+  const mode = blobMode();
+  if (!mode) return Response.json({ error: "blob_not_configured" }, { status: 503 });
   try {
-    const result = await handleUpload({
-      token,
+    if (mode === "token") {
+      const body = (await request.json()) as HandleUploadBody;
+      const result = await handleUpload({
+        token: blobToken(),
+        body,
+        request,
+        onBeforeGenerateToken: async (pathname) => {
+          checkPathname(pathname);
+          return { allowedContentTypes: PDF, maximumSizeInBytes: MAX_BYTES, addRandomSuffix: true };
+        },
+      });
+      return Response.json(result);
+    }
+
+    const body = (await request.json()) as HandleUploadPresignedBody;
+    const result = await handleUploadPresigned({
       body,
       request,
-      onBeforeGenerateToken: async () => ({
-        allowedContentTypes: ["application/pdf"],
-        maximumSizeInBytes: 300 * 1024 * 1024,
-        addRandomSuffix: true,
-      }),
-      onUploadCompleted: async () => {
-        // The browser saves the URL on the book itself (PATCH /api/books/[id]).
+      webhookPublicKey: blobWebhookPublicKey(),
+      getSignedToken: async (pathname) => {
+        checkPathname(pathname);
+        const token = await issueSignedToken({
+          storeId: blobStoreId(),
+          pathname,
+          operations: ["put"],
+          allowedContentTypes: PDF,
+          maximumSizeInBytes: MAX_BYTES,
+        });
+        return { token, urlOptions: { allowedContentTypes: PDF, maximumSizeInBytes: MAX_BYTES, addRandomSuffix: true } };
       },
     });
     return Response.json(result);
   } catch (err) {
+    console.error("blob upload route failed", err);
     return Response.json({ error: (err as Error).message }, { status: 400 });
   }
 }

@@ -3,6 +3,15 @@ import { OCR_SYSTEM, ocrUserPrompt, parseOcrOutput } from "@/lib/prompts/ocr";
 import { getAnthropic, hasApiKey, isMockMode } from "./anthropic";
 import { assertBudget, recordUsage } from "./budget";
 
+/**
+ * Reading book pages with Claude (scanned, broken or reversed pages) costs
+ * credits, so it is OFF unless AI_BOOK_READING=1. When off, only the free text
+ * inside the PDF is saved and those pages are skipped.
+ */
+export function aiBookReadingEnabled(): boolean {
+  return process.env.AI_BOOK_READING === "1";
+}
+
 /** Model that reads scanned pages (at most Claude Sonnet 4.6; OCR_MODEL can choose a cheaper one). */
 export function ocrModel(): string {
   return process.env.OCR_MODEL || "claude-sonnet-4-6";

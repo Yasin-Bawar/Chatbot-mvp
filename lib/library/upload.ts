@@ -101,8 +101,10 @@ function putLocal(bookId: string, file: File, onProgress: (p: number) => void): 
 
 /** Vercel Blob: the file goes straight from the browser to storage. */
 async function putBlob(bookId: string, file: File, onProgress: (p: number) => void): Promise<Book> {
-  const { upload } = await import("@vercel/blob/client");
-  const blob = await upload(`books/${bookId}.pdf`, file, {
+  const { upload, uploadPresigned } = await import("@vercel/blob/client");
+  // Keyless Blob stores hand out presigned URLs instead of client tokens.
+  const send = useBooksStore.getState().blobMode === "keyless" ? uploadPresigned : upload;
+  const blob = await send(`books/${bookId}.pdf`, file, {
     access: "public",
     handleUploadUrl: "/api/books/upload",
     contentType: "application/pdf",

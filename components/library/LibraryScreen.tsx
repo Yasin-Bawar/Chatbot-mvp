@@ -17,7 +17,7 @@ import { UploadDialog } from "./UploadDialog";
 const MAX_FILES = 30;
 
 export function LibraryScreen() {
-  const { books, configured, storage, storageProblem, loaded, error, refresh, followed } = useBooksStore();
+  const { books, configured, storage, loaded, error, refresh, followed, aiReading } = useBooksStore();
   const uploads = useUploads((s) => s.uploads);
   const [files, setFiles] = useState<File[]>([]);
   const [dragging, setDragging] = useState(false);
@@ -86,9 +86,7 @@ export function LibraryScreen() {
   const presentSubjects = SUBJECTS.filter((s) => books.some((b) => b.subject === s.id));
   const totalPages = books.reduce((n, b) => n + b.pagesDone, 0);
   const uploadList = Object.values(uploads).sort((a, b) => a.order - b.order);
-  const serverList = books
-    .filter((b) => followed.includes(b.id))
-    .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+  const serverList = books.filter((b) => followed.includes(b.id)).sort((a, b) => a.createdAt.localeCompare(b.createdAt));
   const progressCount = uploadList.length + serverList.length;
   const doneCount = serverList.filter((b) => b.phase === "done").length;
   const current = serverList.find((b) => b.phase === "extracting" || b.phase === "ai");
@@ -106,7 +104,8 @@ export function LibraryScreen() {
               کتابخانه
             </h1>
             <p className="mt-2 max-w-xl text-[14.5px] leading-7 text-ink-2">
-              کتاب‌های درسی مکتب را اضافه کنید. هما متن کامل همه صفحات را می‌خواند، به حافظه می‌سپارد و از روی همین کتاب‌ها درس می‌دهد.
+              کتاب‌های درسی مکتب را اضافه کنید. هما متن کامل همه صفحات را می‌خواند، به حافظه می‌سپارد و از روی همین کتاب‌ها درس
+              می‌دهد.
             </p>
           </div>
           {books.length > 0 && (
@@ -124,7 +123,8 @@ export function LibraryScreen() {
             </span>
             <div className="text-sm leading-7 text-ink-2">
               <div className="mb-1 text-base font-bold text-ink">پایگاه داده تنظیم نشده است</div>
-              برای ذخیره کتاب‌ها روی Vercel، در تنظیمات پروژه یک دیتابیس <b>Neon Postgres</b> اضافه کنید تا متغیر <code dir="ltr">DATABASE_URL</code> ساخته شود. سپس دوباره deploy کنید.
+              برای ذخیره کتاب‌ها روی Vercel، در تنظیمات پروژه یک دیتابیس <b>Neon Postgres</b> اضافه کنید تا متغیر{" "}
+              <code dir="ltr">DATABASE_URL</code> ساخته شود. سپس دوباره deploy کنید.
             </div>
           </div>
         ) : storage === "none" ? (
@@ -134,19 +134,10 @@ export function LibraryScreen() {
             </span>
             <div className="text-sm leading-7 text-ink-2">
               <div className="mb-1 text-base font-bold text-ink">فضای ذخیره فایل تنظیم نشده است</div>
-              {storageProblem === "store_id_only" ? (
-                <>
-                  Blob store وصل شده است، ولی این برنامه برای بارگذاری فایل به کلید <code dir="ltr">BLOB_READ_WRITE_TOKEN</code> نیاز دارد. در
-                  Vercel صفحه همان Blob store را باز کنید، مقدار <code dir="ltr">BLOB_READ_WRITE_TOKEN</code> را کاپی کنید و در{" "}
-                  <b>Settings → Environment Variables</b> پروژه اضافه کنید، سپس دوباره deploy کنید.
-                </>
-              ) : (
-                <>
-                  برای اینکه کتاب‌ها حتی با بسته بودن سایت خوانده شوند، فایل PDF باید روی سرور بماند. در Vercel از بخش <b>Storage</b> یک{" "}
-                  <b>Blob store</b> بسازید و به این پروژه وصل کنید (متغیر <code dir="ltr">BLOB_READ_WRITE_TOKEN</code>)، سپس دوباره deploy
-                  کنید.
-                </>
-              )}
+              برای اینکه کتاب‌ها حتی با بسته بودن سایت خوانده شوند، فایل PDF باید روی سرور بماند. در Vercel از بخش <b>
+                Storage
+              </b>{" "}
+              یک <b>Blob store</b> بسازید و به این پروژه وصل کنید، سپس دوباره deploy کنید.
               {books.length > 0 && <BookGridNote count={books.length} />}
             </div>
           </div>
@@ -168,7 +159,9 @@ export function LibraryScreen() {
               onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && fileRef.current?.click()}
               className={cn(
                 "group relative flex cursor-pointer flex-col items-center gap-3 overflow-hidden rounded-3xl border-2 border-dashed px-6 py-10 text-center transition",
-                dragging ? "border-primary bg-primary-soft" : "border-[#d5d3f5] bg-surface/70 hover:border-primary/50 hover:bg-surface",
+                dragging
+                  ? "border-primary bg-primary-soft"
+                  : "border-[#d5d3f5] bg-surface/70 hover:border-primary/50 hover:bg-surface",
               )}
             >
               <div className="pointer-events-none absolute inset-0 opacity-60 [background:radial-gradient(40%_60%_at_20%_100%,rgba(165,180,252,0.25),transparent),radial-gradient(40%_60%_at_80%_0%,rgba(240,171,252,0.2),transparent)]" />
@@ -282,7 +275,7 @@ export function LibraryScreen() {
         )}
       </div>
 
-      <PageViewer target={preview} onClose={() => setPreview(null)} canReread={Boolean(previewBook?.hasFile)} />
+      <PageViewer target={preview} onClose={() => setPreview(null)} canReread={Boolean(previewBook?.hasFile && aiReading)} />
       <UploadDialog files={files} onClose={() => setFiles([])} />
     </div>
   );
@@ -290,9 +283,7 @@ export function LibraryScreen() {
 
 function BookGridNote({ count }: { count: number }) {
   return (
-    <div className="mt-2 text-muted">
-      {toFaDigits(count)} کتابی که قبلاً اضافه شده‌اند، همچنان در گفتگو استفاده می‌شوند.
-    </div>
+    <div className="mt-2 text-muted">{toFaDigits(count)} کتابی که قبلاً اضافه شده‌اند، همچنان در گفتگو استفاده می‌شوند.</div>
   );
 }
 
@@ -313,7 +304,9 @@ function FilterChip({ active, onClick, children }: { active: boolean; onClick: (
       onClick={onClick}
       className={cn(
         "shrink-0 rounded-xl border px-3 py-1.5 text-[13px] transition",
-        active ? "border-primary/30 bg-primary-soft font-semibold text-primary" : "border-line bg-surface text-ink-2 hover:border-primary/30",
+        active
+          ? "border-primary/30 bg-primary-soft font-semibold text-primary"
+          : "border-line bg-surface text-ink-2 hover:border-primary/30",
       )}
     >
       {children}

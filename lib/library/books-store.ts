@@ -17,7 +17,11 @@ interface BooksState {
   configured: boolean;
   storage: StorageKind;
   /** Why Vercel Blob is not usable (for the setup notice). */
-  storageProblem: "missing" | "store_id_only" | null;
+  storageProblem: "missing" | null;
+  /** How the browser uploads to Vercel Blob: client token, or presigned URL (keyless store). */
+  blobMode: "token" | "keyless" | null;
+  /** Whether scanned pages may be read with Claude (costs credits). */
+  aiReading: boolean;
   loaded: boolean;
   error: string | null;
   /** Books whose progress card is shown (started or seen working in this visit). */
@@ -37,6 +41,8 @@ export const useBooksStore = create<BooksState>((set, get) => ({
   configured: true,
   storage: "local",
   storageProblem: null,
+  blobMode: null,
+  aiReading: false,
   loaded: false,
   error: null,
   followed: [],
@@ -49,6 +55,8 @@ export const useBooksStore = create<BooksState>((set, get) => ({
           configured?: boolean;
           storage?: StorageKind;
           storageProblem?: BooksState["storageProblem"];
+          blobMode?: BooksState["blobMode"];
+          aiReading?: boolean;
           books?: Book[];
           message?: string;
         };
@@ -62,6 +70,8 @@ export const useBooksStore = create<BooksState>((set, get) => ({
           configured: data.configured !== false,
           storage: data.storage ?? "local",
           storageProblem: data.storageProblem ?? null,
+          blobMode: data.blobMode ?? null,
+          aiReading: Boolean(data.aiReading),
           loaded: true,
           error: null,
           followed: [...followed].filter((id) => books.some((b) => b.id === id)),

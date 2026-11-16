@@ -84,6 +84,7 @@ function UploadForm({ files, onClose }: { files: File[]; onClose: () => void }) 
     }),
   );
   const books = useBooksStore((s) => s.books);
+  const aiReading = useBooksStore((s) => s.aiReading);
   const existingTitles = useMemo(() => new Set(books.map((b) => normalizeFa(b.title).trim())), [books]);
 
   const update = (id: string, patch: Partial<Row>) => setRows((rs) => rs.map((r) => (r.id === id ? { ...r, ...patch } : r)));
@@ -133,7 +134,9 @@ function UploadForm({ files, onClose }: { files: File[]; onClose: () => void }) 
                 onClick={() => setGradeForAll(g)}
                 className={cn(
                   "h-10 rounded-xl border text-sm transition",
-                  allGrade === g ? "bg-gradient-brand border-transparent font-bold text-white" : "border-line bg-surface text-ink-2 hover:border-primary/30",
+                  allGrade === g
+                    ? "bg-gradient-brand border-transparent font-bold text-white"
+                    : "border-line bg-surface text-ink-2 hover:border-primary/30",
                 )}
               >
                 {toFaDigits(g)}
@@ -235,17 +238,25 @@ function UploadForm({ files, onClose }: { files: File[]; onClose: () => void }) 
           </AnimatePresence>
         </div>
 
-        <label className="flex cursor-pointer items-start gap-3 rounded-2xl border border-line bg-gradient-to-l from-[#f5f3ff] to-white p-4">
-          <input type="checkbox" checked={forceAi} onChange={(e) => setForceAi(e.target.checked)} className="mt-1 size-4 accent-[#4f46e5]" />
-          <span className="grid gap-0.5">
-            <span className="flex items-center gap-1.5 text-sm font-semibold">
-              <Sparkles className="size-4 text-primary" /> همه صفحات را هوش مصنوعی بخواند
+        {aiReading && (
+          <label className="flex cursor-pointer items-start gap-3 rounded-2xl border border-line bg-gradient-to-l from-[#f5f3ff] to-white p-4">
+            <input
+              type="checkbox"
+              checked={forceAi}
+              onChange={(e) => setForceAi(e.target.checked)}
+              className="mt-1 size-4 accent-[#4f46e5]"
+            />
+            <span className="grid gap-0.5">
+              <span className="flex items-center gap-1.5 text-sm font-semibold">
+                <Sparkles className="size-4 text-primary" /> همه صفحات را هوش مصنوعی بخواند
+              </span>
+              <span className="text-xs leading-6 text-muted">
+                کیفیت بالاتر برای جدول‌ها و فورمول‌ها، اما کندتر و پرمصرف‌تر. در حالت عادی فقط صفحات اسکن‌شده یا خراب با هوش
+                مصنوعی خوانده می‌شوند.
+              </span>
             </span>
-            <span className="text-xs leading-6 text-muted">
-              کیفیت بالاتر برای جدول‌ها و فورمول‌ها، اما کندتر و پرمصرف‌تر. در حالت عادی فقط صفحات اسکن‌شده یا خراب با هوش مصنوعی خوانده می‌شوند.
-            </span>
-          </span>
-        </label>
+          </label>
+        )}
       </div>
 
       <div className="sticky bottom-0 border-t border-line bg-surface/95 p-4 backdrop-blur">
@@ -257,7 +268,9 @@ function UploadForm({ files, onClose }: { files: File[]; onClose: () => void }) 
           {rows.length > 1 ? `شروع پردازش ${toFaDigits(rows.length)} کتاب` : "شروع پردازش کتاب"}
         </button>
         {rows.length > 1 && (
-          <p className="mt-2 text-center text-xs text-muted">کتاب‌ها یکی پس از دیگری خوانده می‌شوند. تا پایان، صفحه کتابخانه را باز نگه دارید.</p>
+          <p className="mt-2 text-center text-xs text-muted">
+            کتاب‌ها یکی پس از دیگری خوانده می‌شوند. تا پایان، صفحه کتابخانه را باز نگه دارید.
+          </p>
         )}
       </div>
     </form>
