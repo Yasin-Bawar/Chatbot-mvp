@@ -328,7 +328,7 @@ export function Composer({ chatId, streaming, variant, seed }: Props) {
       </div>
       {variant === "dock" && (
         <p className="mt-1.5 hidden text-center text-[11px] text-muted sm:block">
-          دانا هم ممکن است اشتباه کند. جواب‌های مهم را با کتاب و معلم خود چک کنید.
+          هما هم ممکن است اشتباه کند. جواب‌های مهم را با کتاب و معلم خود چک کنید.
         </p>
       )}
     </div>

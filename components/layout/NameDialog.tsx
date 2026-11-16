@@ -17,7 +17,7 @@ export function NameDialog() {
     <Dialog
       open={open}
       onOpenChange={(o) => !o && updateSettings({ askedName: true })}
-      title="سلام! من دانا هستم 👋"
+      title="سلام! من هما هستم 👋"
       description="معلم هوشمند شما. نام شما چیست؟ (اختیاری)"
       className="max-w-md"
     >

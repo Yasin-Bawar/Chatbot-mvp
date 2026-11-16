@@ -5,14 +5,14 @@
 export const MODELS = [
   {
     id: "claude-sonnet-4-6",
-    label: "دانا پیشرفته",
+    label: "هما پیشرفته",
     hint: "بهترین کیفیت برای درس‌ها",
     defaultEffort: "medium",
     webSearchTool: "web_search_20260209",
   },
   {
     id: "claude-haiku-5-5",
-    label: "دانا سبک",
+    label: "هما سبک",
     hint: "خیلی سریع و ارزان برای سوال‌های ساده",
     defaultEffort: "low",
     webSearchTool: "web_search_20250305",

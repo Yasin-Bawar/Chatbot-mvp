@@ -88,7 +88,7 @@ export function BookScopePicker() {
           sideOffset={6}
           className="menu-content z-50 w-80 rounded-2xl border border-line bg-surface p-2 shadow-[var(--shadow-lg)]"
         >
-          <div className="px-2 pb-2 pt-1 text-xs leading-6 text-muted">دانا از کدام کتاب‌ها درس بدهد؟</div>
+          <div className="px-2 pb-2 pt-1 text-xs leading-6 text-muted">هما از کدام کتاب‌ها درس بدهد؟</div>
           <button
             type="button"
             onClick={() => updateSettings({ bookIds: [] })}

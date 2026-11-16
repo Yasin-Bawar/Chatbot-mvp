@@ -1,6 +1,6 @@
-# دانا — معلم هوشمند برای شاگردان افغانستان
+# هما — معلم هوشمند برای شاگردان افغانستان
 
-**Dana** is a Farsi (Dari) AI teacher chatbot for school students in Afghanistan, built with Next.js and the official Anthropic SDK (Claude). Teachers upload school-book PDFs in the **Library**; Dana extracts the full text, stores it as memory, and teaches from the books with page citations.
+**Homa** is a Farsi (Dari) AI teacher chatbot for school students in Afghanistan, built with Next.js and the official Anthropic SDK (Claude). Teachers upload school-book PDFs in the **Library**; Homa extracts the full text, stores it as memory, and teaches from the books with page citations.
 
 <p align="center">
   <img src="docs/screenshots/home.jpg" alt="Home screen" width="760" />
@@ -29,17 +29,17 @@
   - tips become 💡 callout cards and tables become styled cards;
   - math is typeset with KaTeX;
   - code blocks have a copy button.
-- **Teacher's board** (تخته): for math, physics and chemistry problems, Dana solves the problem on a chalkboard inside the chat, step by step, like a teacher in class.
+- **Teacher's board** (تخته): for math, physics and chemistry problems, Homa solves the problem on a chalkboard inside the chat, step by step, like a teacher in class.
   - Equations are written line by line with a moving piece of chalk, and short Dari notes explain each step.
   - Function graphs and geometry or physics sketches (triangles, angles, circles, force arrows) are drawn stroke by stroke.
   - The final answer is boxed.
   - A new board **opens full screen by itself** and is written slowly, step by step. A big control bar suits phones: play/pause, previous/next, replay, show all, and a **speed** button (آهسته / عادی / تیز, remembered on the device).
   - In the chat, the board stays as a compact card: tap it to open full screen again. Answers opened from history show complete and can be replayed.
   - Keyboard in full screen: Space play/pause, ← next, → previous, Esc close.
-- **Duolingo-style exams** (آزمونک): Dana's quiz appears as an exam card in the chat; it opens full screen when the student presses «شروع آزمون» (never by itself).
+- **Duolingo-style exams** (آزمونک): Homa's quiz appears as an exam card in the chat; it opens full screen when the student presses «شروع آزمون» (never by itself).
   - One question at a time, with a progress bar, a 🔥 streak, big 3D answer buttons, «بررسی» (check) and «نمی‌دانم» (I don't know), and a green/red feedback sheet with the explanation. There are small sounds (they can be muted) and confetti.
   - The results screen shows the score, time and best streak, with «تمرین اشتباهات» (practice mistakes) and «دوباره» (retry).
-  - **«برگشت به دانا و فرستادن نتیجه»** returns to the chat and sends the result as a card; Dana then explains each mistake. Quiz mode switches off so she explains instead of quizzing again.
+  - **«برگشت به هما و فرستادن نتیجه»** returns to the chat and sends the result as a card; Homa then explains each mistake. Quiz mode switches off so she explains instead of quizzing again.
   - Keyboard: 1–4 choose, Enter checks/continues, Esc exits.
 - **Interactive visuals** that open full screen by themselves once, for a new answer, and stay as a small card in the chat. They are kept calm and simple: one colour per subject (geography teal, chemistry green, physics blue), light textbook-style pages, and very little text.
   - **3D Earth** (```` ```globe ````) for geography and history: highlighted countries with Dari names, cities, and routes such as the Silk Road. Drag to turn and pinch to zoom. The map is bundled (Natural Earth 1:110m), so no map images are downloaded.
@@ -48,7 +48,7 @@
   - **States of matter** (```` ```sim ```` with `"type": "states"`): particles in a jar change from a vibrating solid to a sliding liquid to a fast gas as the temperature slider passes the melting and boiling points.
 - **Room to read:** answers use the full width; the top bars slide away while scrolling down and come back when scrolling up; and the message box is a single line until it is tapped.
 - Chips under the input box (shown when it is tapped): 📎 attach a photo or PDF (photos are compressed for slow internet), 💡 تفکر عمیق (deeper thinking), 📝 آزمونک (quiz mode), 🌐 جستجوی وب (web search). Small coloured dots show which modes are on.
-- A model picker (دانا پیشرفته = Claude Sonnet 4.6, دانا سبک = Claude Haiku 5.5) and a book picker that limits answers to chosen books.
+- A model picker (هما پیشرفته = Claude Sonnet 4.6, هما سبک = Claude Haiku 5.5) and a book picker that limits answers to chosen books.
 - Claude-style features:
   - stop, regenerate, and edit-and-resend;
   - copy and 👍/👎 on answers;

@@ -163,7 +163,7 @@ export function BookCard({ book, onPreview }: { book: Book; onPreview: (book: Bo
         </div>
       </div>
 
-      <Dialog open={confirmDelete} onOpenChange={setConfirmDelete} title="حذف کتاب؟" description={`«${book.title}» و همه متن‌های آن از حافظه دانا پاک می‌شود.`} className="max-w-sm">
+      <Dialog open={confirmDelete} onOpenChange={setConfirmDelete} title="حذف کتاب؟" description={`«${book.title}» و همه متن‌های آن از حافظه هما پاک می‌شود.`} className="max-w-sm">
         <div className="flex gap-2 p-5">
           <button type="button" onClick={doDelete} className="flex-1 rounded-2xl bg-danger px-4 py-2.5 font-semibold text-white hover:brightness-110">
             بله، حذف شود

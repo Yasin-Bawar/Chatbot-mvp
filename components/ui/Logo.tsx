@@ -3,7 +3,7 @@
 import { useId } from "react";
 import { cn } from "@/lib/utils";
 
-/** "دانا" brand mark: an open book with a spark, in the brand gradient. */
+/** "هما" brand mark: an open book with a spark, in the brand gradient. */
 export function LogoMark({ className }: { className?: string }) {
   // Unique gradient id: the same logo can be rendered in a hidden sidebar and the mobile bar.
   const id = useId().replace(/:/g, "");
@@ -27,7 +27,7 @@ export function Logo({ className }: { className?: string }) {
   return (
     <div className={cn("flex items-center gap-2.5", className)}>
       <LogoMark />
-      <span className="text-[22px] font-black tracking-tight text-[#1e1b4b]">دانا</span>
+      <span className="text-[22px] font-black tracking-tight text-[#1e1b4b]">هما</span>
     </div>
   );
 }
