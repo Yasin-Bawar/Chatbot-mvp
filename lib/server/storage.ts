@@ -11,8 +11,34 @@ const LOCAL_PREFIX = "local:";
 
 export type StorageKind = "blob" | "local" | "none";
 
+/**
+ * The Vercel Blob read-write token. Usually BLOB_READ_WRITE_TOKEN, but the
+ * Vercel "Connect" dialog can add a custom prefix (e.g. MYAPP_BLOB_READ_WRITE_TOKEN),
+ * so any *READ_WRITE_TOKEN variable holding a Blob token is accepted.
+ */
+export function blobToken(): string | undefined {
+  const direct = process.env.BLOB_READ_WRITE_TOKEN?.trim();
+  if (direct) return direct;
+  for (const [name, value] of Object.entries(process.env)) {
+    const v = value?.trim();
+    if (name.endsWith("READ_WRITE_TOKEN") && v?.startsWith("vercel_blob_rw_")) return v;
+  }
+  return undefined;
+}
+
+/**
+ * Why Blob is not usable, for the setup notice: no Blob variables at all, or
+ * only a store id (keyless OIDC sign-in), which can't issue the browser-upload
+ * tokens this app uses - it needs the store's read-write token.
+ */
+export function blobSetupProblem(): "missing" | "store_id_only" | null {
+  if (blobToken()) return null;
+  const hasStoreId = Object.keys(process.env).some((name) => name.endsWith("BLOB_STORE_ID") && process.env[name]?.trim());
+  return hasStoreId ? "store_id_only" : "missing";
+}
+
 export function storageKind(): StorageKind {
-  if (process.env.BLOB_READ_WRITE_TOKEN) return "blob";
+  if (blobToken()) return "blob";
   if (process.env.VERCEL !== "1") return "local";
   return "none";
 }
@@ -52,9 +78,9 @@ export async function deletePdf(ref: string | null | undefined): Promise<void> {
   try {
     if (isLocalRef(ref)) {
       await rm(localPath(ref.slice(LOCAL_PREFIX.length)), { force: true });
-    } else if (process.env.BLOB_READ_WRITE_TOKEN) {
+    } else if (blobToken()) {
       const { del } = await import("@vercel/blob");
-      await del(ref);
+      await del(ref, { token: blobToken() });
     }
   } catch (err) {
     console.error("could not delete stored PDF", err);

@@ -17,7 +17,7 @@ import { UploadDialog } from "./UploadDialog";
 const MAX_FILES = 30;
 
 export function LibraryScreen() {
-  const { books, configured, storage, loaded, error, refresh, followed } = useBooksStore();
+  const { books, configured, storage, storageProblem, loaded, error, refresh, followed } = useBooksStore();
   const uploads = useUploads((s) => s.uploads);
   const [files, setFiles] = useState<File[]>([]);
   const [dragging, setDragging] = useState(false);
@@ -134,9 +134,19 @@ export function LibraryScreen() {
             </span>
             <div className="text-sm leading-7 text-ink-2">
               <div className="mb-1 text-base font-bold text-ink">فضای ذخیره فایل تنظیم نشده است</div>
-              برای اینکه کتاب‌ها حتی با بسته بودن سایت خوانده شوند، فایل PDF باید روی سرور بماند. در Vercel از بخش{" "}
-              <b>Storage</b> یک <b>Blob store</b> بسازید و به این پروژه وصل کنید (متغیر <code dir="ltr">BLOB_READ_WRITE_TOKEN</code>)،
-              سپس دوباره deploy کنید.
+              {storageProblem === "store_id_only" ? (
+                <>
+                  Blob store وصل شده است، ولی این برنامه برای بارگذاری فایل به کلید <code dir="ltr">BLOB_READ_WRITE_TOKEN</code> نیاز دارد. در
+                  Vercel صفحه همان Blob store را باز کنید، مقدار <code dir="ltr">BLOB_READ_WRITE_TOKEN</code> را کاپی کنید و در{" "}
+                  <b>Settings → Environment Variables</b> پروژه اضافه کنید، سپس دوباره deploy کنید.
+                </>
+              ) : (
+                <>
+                  برای اینکه کتاب‌ها حتی با بسته بودن سایت خوانده شوند، فایل PDF باید روی سرور بماند. در Vercel از بخش <b>Storage</b> یک{" "}
+                  <b>Blob store</b> بسازید و به این پروژه وصل کنید (متغیر <code dir="ltr">BLOB_READ_WRITE_TOKEN</code>)، سپس دوباره deploy
+                  کنید.
+                </>
+              )}
               {books.length > 0 && <BookGridNote count={books.length} />}
             </div>
           </div>

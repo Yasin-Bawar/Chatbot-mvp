@@ -1,13 +1,16 @@
 import { handleUpload, type HandleUploadBody } from "@vercel/blob/client";
+import { blobToken } from "@/lib/server/storage";
 
 /** Issues client-upload tokens so large PDFs go straight from the browser to Vercel Blob. */
 export async function POST(request: Request) {
-  if (!process.env.BLOB_READ_WRITE_TOKEN) {
+  const token = blobToken();
+  if (!token) {
     return Response.json({ error: "blob_not_configured" }, { status: 503 });
   }
   const body = (await request.json()) as HandleUploadBody;
   try {
     const result = await handleUpload({
+      token,
       body,
       request,
       onBeforeGenerateToken: async () => ({

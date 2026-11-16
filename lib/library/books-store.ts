@@ -16,6 +16,8 @@ interface BooksState {
   books: Book[];
   configured: boolean;
   storage: StorageKind;
+  /** Why Vercel Blob is not usable (for the setup notice). */
+  storageProblem: "missing" | "store_id_only" | null;
   loaded: boolean;
   error: string | null;
   /** Books whose progress card is shown (started or seen working in this visit). */
@@ -34,6 +36,7 @@ export const useBooksStore = create<BooksState>((set, get) => ({
   books: [],
   configured: true,
   storage: "local",
+  storageProblem: null,
   loaded: false,
   error: null,
   followed: [],
@@ -42,7 +45,13 @@ export const useBooksStore = create<BooksState>((set, get) => ({
     inflight = (async () => {
       try {
         const res = await fetch("/api/books", { cache: "no-store" });
-        const data = (await res.json()) as { configured?: boolean; storage?: StorageKind; books?: Book[]; message?: string };
+        const data = (await res.json()) as {
+          configured?: boolean;
+          storage?: StorageKind;
+          storageProblem?: BooksState["storageProblem"];
+          books?: Book[];
+          message?: string;
+        };
         if (!res.ok) throw new Error(data.message || "خطا در بارگذاری کتابخانه");
         const books = data.books ?? [];
         // Follow books the server is working on, so their progress is visible.
@@ -52,6 +61,7 @@ export const useBooksStore = create<BooksState>((set, get) => ({
           books,
           configured: data.configured !== false,
           storage: data.storage ?? "local",
+          storageProblem: data.storageProblem ?? null,
           loaded: true,
           error: null,
           followed: [...followed].filter((id) => books.some((b) => b.id === id)),

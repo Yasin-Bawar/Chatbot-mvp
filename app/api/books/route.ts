@@ -3,7 +3,7 @@ import { z } from "zod";
 import { createBook, hasWaitingWork, listBooks } from "@/lib/server/books-repo";
 import { isDbConfigured } from "@/lib/server/db";
 import { apiError } from "@/lib/server/http";
-import { storageKind } from "@/lib/server/storage";
+import { blobSetupProblem, storageKind } from "@/lib/server/storage";
 import { kickWorker, MAX_ACTIVE_BOOKS } from "@/lib/server/worker";
 
 // Opening the library also revives a stalled job (e.g. a run that was cut off).
@@ -12,8 +12,10 @@ let lastKick = 0;
 export async function GET(req: Request) {
   await connection();
   const storage = storageKind();
+  // On Vercel without Blob: say what is missing (shown in the Library's setup notice).
+  const storageProblem = storage === "none" ? blobSetupProblem() : null;
   if (!isDbConfigured()) {
-    return Response.json({ configured: false, storage, blob: storage === "blob", books: [] });
+    return Response.json({ configured: false, storage, storageProblem, blob: storage === "blob", books: [] });
   }
   try {
     const books = await listBooks();
@@ -22,7 +24,7 @@ export async function GET(req: Request) {
       const origin = new URL(req.url).origin;
       after(() => kickWorker(origin));
     }
-    return Response.json({ configured: true, storage, blob: storage === "blob", books });
+    return Response.json({ configured: true, storage, storageProblem, blob: storage === "blob", books });
   } catch (err) {
     return apiError(err);
   }
