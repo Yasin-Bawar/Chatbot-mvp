@@ -15,7 +15,7 @@ import { PageViewer, type PageTarget } from "./PageViewer";
 import { BookScopePicker, ModelPicker } from "./Pickers";
 
 const SUGGESTIONS = [
-  { Icon: FlaskConical, color: "#10B981", title: "بیولوژی", text: "فتوسنتز را خیلی ساده برایم توضیح بده." },
+  { Icon: FlaskConical, color: "#10B981", title: "بیولوژی", text: "بدن انسان را سه‌بعدی نشان بده و کار قلب را ساده توضیح بده." },
   { Icon: Calculator, color: "#4F46E5", title: "ریاضی", text: "معادله درجه دوم را با یک مثال قدم به قدم حل کن." },
   { Icon: Atom, color: "#0EA5E9", title: "فزیک", text: "قانون دوم نیوتن را با مثال‌های روزمره توضیح بده." },
   { Icon: Languages, color: "#F59E0B", title: "انگلیسی", text: "فرق بین present simple و present continuous چیست؟" },

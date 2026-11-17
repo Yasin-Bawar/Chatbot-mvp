@@ -69,7 +69,7 @@ const components: Components = {
     const text = hastText(code).replace(/\n$/, "");
     if (language === "quiz") return <QuizCard raw={text} streaming={streaming} />;
     if (language === "board") return <Board raw={text} streaming={streaming} />;
-    if (language === "globe" || language === "molecule" || language === "sim") {
+    if (language === "globe" || language === "molecule" || language === "sim" || language === "anatomy") {
       return <VisualCard lang={language} raw={text} streaming={streaming} />;
     }
     return (

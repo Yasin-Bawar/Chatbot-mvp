@@ -5,7 +5,7 @@ import type { VisualSpec } from "@/lib/visuals/types";
  * covers in lib/subjects.ts, a little darker so it reads well on white).
  */
 export interface VisualTheme {
-  subject: "geography" | "chemistry" | "physics";
+  subject: "geography" | "chemistry" | "physics" | "biology";
   /** Subject name shown on the card and in the header. */
   label: string;
   /** What kind of visual it is, in a word or two. */
@@ -22,6 +22,7 @@ const PHYSICS = { subject: "physics", label: "فزیک", accent: "#0284c7", acce
 
 export function visualTheme(spec: VisualSpec): VisualTheme {
   if (spec.kind === "globe") return { ...GEOGRAPHY, kind: "کره زمین", dark: true };
+  if (spec.kind === "anatomy") return { subject: "biology", label: "بیولوژی", kind: "بدن سه‌بعدی", accent: "#0f766e", accentSoft: "#ccfbf1", dark: false };
   if (spec.kind === "molecule") return { ...CHEMISTRY, kind: "مولکول", dark: false };
   if (spec.type === "states") return { ...CHEMISTRY, kind: "آزمایش", dark: false };
   return { ...PHYSICS, kind: "آزمایش", dark: false };

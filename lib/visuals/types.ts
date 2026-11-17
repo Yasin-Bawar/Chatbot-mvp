@@ -1,6 +1,6 @@
 /**
  * Interactive visuals Dana can put in an answer, each as one JSON object in a
- * fenced block: ```globe, ```molecule or ```sim. They open full screen.
+ * fenced block: ```globe, ```molecule, ```anatomy or ```sim. They open full screen.
  */
 
 export type LatLon = { lat: number; lon: number };
@@ -50,7 +50,15 @@ export interface SimSpec {
   substance?: { name: string; melt: number; boil: number };
 }
 
-export type VisualSpec = GlobeSpec | MoleculeSpec | SimSpec;
+export interface AnatomySpec {
+  kind: "anatomy";
+  title: string;
+  note?: string;
+  system: import("./anatomy").BodySystem;
+  focus?: string;
+}
+
+export type VisualSpec = GlobeSpec | MoleculeSpec | SimSpec | AnatomySpec;
 export type VisualKind = VisualSpec["kind"];
 
-export const VISUAL_LANGS: readonly VisualKind[] = ["globe", "molecule", "sim"];
+export const VISUAL_LANGS: readonly VisualKind[] = ["globe", "molecule", "sim", "anatomy"];

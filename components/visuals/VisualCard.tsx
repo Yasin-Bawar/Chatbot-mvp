@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "motion/react";
-import { Atom, Earth, FlaskConical, LoaderCircle, Maximize2, Orbit, X } from "lucide-react";
+import { Atom, Earth, FlaskConical, Heart, LoaderCircle, Maximize2, Orbit, X } from "lucide-react";
 import dynamic from "next/dynamic";
 import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
@@ -23,9 +23,11 @@ const Loading = () => (
 const Globe = dynamic(() => import("./Globe"), { ssr: false, loading: Loading });
 const Molecule = dynamic(() => import("./Molecule"), { ssr: false, loading: Loading });
 const Sim = dynamic(() => import("./Sim"), { ssr: false, loading: Loading });
+const Anatomy = dynamic(() => import("./Anatomy"), { ssr: false, loading: Loading });
 
 function describe(spec: VisualSpec): { icon: React.ReactNode; note?: string; subtitle?: string } {
   if (spec.kind === "globe") return { icon: <Earth />, note: spec.note };
+  if (spec.kind === "anatomy") return { icon: <Heart />, note: spec.note };
   if (spec.kind === "molecule") {
     const preset = findPreset(spec.preset ?? spec.title);
     const formula = spec.formula || preset?.formula || (spec.atoms.length ? formulaOf(spec.atoms) : "");
@@ -40,7 +42,7 @@ function titleOf(spec: VisualSpec): string {
 }
 
 /**
- * A ```globe / ```molecule / ```sim block. In the chat it is a light card; the
+ * A ```globe / ```molecule / ```anatomy / ```sim block. In the chat it is a light card; the
  * visual itself opens full screen (by itself once, for a new answer).
  */
 export function VisualCard({ lang, raw, streaming }: { lang: VisualKind; raw: string; streaming: boolean }) {
@@ -161,6 +163,8 @@ export function VisualCard({ lang, raw, streaming }: { lang: VisualKind; raw: st
                     <Globe spec={spec} />
                   ) : spec.kind === "molecule" ? (
                     <Molecule spec={spec} />
+                  ) : spec.kind === "anatomy" ? (
+                    <Anatomy spec={spec} />
                   ) : (
                     <Sim spec={spec} accent={theme.accent} />
                   )}

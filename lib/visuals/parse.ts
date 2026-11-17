@@ -1,10 +1,11 @@
 import { parseLooseJson } from "@/lib/json-repair";
 import { normalizeElement } from "./molecules";
 import { SIM_TITLES } from "./physics";
+import { bodyPart, bodySystem } from "./anatomy";
 import type { GlobeSpec, MoleculeSpec, SimSpec, SimType, VisualKind, VisualSpec } from "./types";
 
 /**
- * Parses the JSON inside a ```globe / ```molecule / ```sim block into a safe,
+ * Parses the JSON inside a ```globe / ```molecule / ```anatomy / ```sim block into a safe,
  * complete spec (defaults filled in, bad values dropped). Returns null when the
  * block cannot be used.
  */
@@ -165,5 +166,14 @@ export function parseVisual(kind: VisualKind, source: string): VisualSpec | null
   if (!isObj(o)) return null;
   if (kind === "globe") return parseGlobe(o);
   if (kind === "molecule") return parseMolecule(o);
+  if (kind === "anatomy") {
+    const focus = bodyPart(str(o.focus, 40));
+    const system = bodySystem(o.system);
+    return {
+      kind: "anatomy", title: str(o.title) ?? "بدن انسان", note: str(o.note, 600),
+      system: focus && system !== "all" && system !== focus.system ? focus.system : system,
+      focus: focus?.id,
+    };
+  }
   return parseSim(o);
 }

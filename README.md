@@ -65,6 +65,22 @@
 - Live progress, resume for books with unread pages, a page-by-page text preview (with «خواندن دوباره این صفحه با هوش مصنوعی» to re-read one page), "ask about this book", and delete.
 - Search runs on Postgres with Farsi-aware normalization and stemming. Claude searches the books through the tools `search_books` and `read_book_pages` and cites pages.
 
+### Interactive human body for biology
+
+Homa can include an `anatomy` block in biology answers, opening the same full-screen viewer used by the globe. Students can rotate and zoom a bundled, schematic 3D body, switch between six body systems, tap 22 selectable organs/structures, read Dari explanations and understanding questions, and view the body from the front or back. Optional heartbeat/breathing animation, labels and a transparent body outline can be toggled. The model loads on demand without downloading external assets. Organ explanations remain accessible if WebGL is unavailable.
+
+Try: «بدن انسان را سه‌بعدی نشان بده و کار قلب را توضیح بده.»
+
+Supported systems: `all`, `respiratory`, `circulatory`, `digestive`, `nervous`, `skeletal`, `urinary`. Example response block:
+
+````markdown
+```anatomy
+{"title":"قلب و گردش خون","system":"circulatory","focus":"heart","note":"روی قلب و رگ‌ها بزنید."}
+```
+````
+
+The geometry is deliberately simplified for school lessons; it is not a medical anatomy atlas. Part IDs and explanations are in `lib/visuals/anatomy.ts`; the teacher's supported format is documented in `lib/prompts/teacher.ts`.
+
 ## How it works
 
 ```
