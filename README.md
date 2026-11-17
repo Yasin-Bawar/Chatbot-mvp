@@ -11,11 +11,15 @@
 </p>
 
 <p align="center">
-  <img src="docs/screenshots/globe.jpg" alt="3D Earth showing Afghanistan and its neighbours" width="620" />
+  <img src="docs/screenshots/globe.jpg" alt="3D Earth (NASA satellite photo) showing Afghanistan, its neighbours, rivers and the Silk Road" width="620" />
 </p>
 
 <p align="center">
   <img src="docs/screenshots/science.jpg" alt="3D water molecule, projectile experiment and states of matter on a phone" width="760" />
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/body.jpg" alt="Real 3D human body: the heart and blood vessels with Dari labels and an explanation card" width="620" />
 </p>
 
 ## امکانات / Features
@@ -42,9 +46,10 @@
   - **«برگشت به هما و فرستادن نتیجه»** returns to the chat and sends the result as a card; Homa then explains each mistake. Quiz mode switches off so she explains instead of quizzing again.
   - Keyboard: 1–4 choose, Enter checks/continues, Esc exits.
 - **Interactive visuals** that open full screen by themselves once, for a new answer, and stay as a small card in the chat. They are kept calm and simple: one colour per subject (geography teal, chemistry green, physics blue), light textbook-style pages, and very little text.
-  - **3D Earth** (```` ```globe ````) for geography and history: highlighted countries with Dari names, cities, and routes such as the Silk Road. Drag to turn and pinch to zoom. The map is bundled (Natural Earth 1:110m), so no map images are downloaded.
+  - **3D Earth** (```` ```globe ````) for geography and history: a real NASA satellite photo with mountain relief (the Hindu Kush stands out), country borders, rivers with Dari names (آمو دریا، هلمند، هریرود…), highlighted countries, cities, and routes such as the Silk Road. One button switches to a clean political map. Tap a country to see its Dari name. Drag to turn and pinch to zoom. All map data and images are bundled (under 1 MB compressed) and load only when the globe opens.
   - **3D molecules** (```` ```molecule ````): ball-and-stick models with single, double and triple bonds and a Dari legend of the elements. There are 13 built-in molecules (water, CO₂, methane, ammonia, ethanol, benzene, a salt crystal…). Any other molecule is laid out with a small VSEPR model, so water is bent, ammonia is a pyramid and benzene is flat.
-  - **Physics experiments** (```` ```sim ````) with sliders and live formulas: projectile motion (earlier throws stay as faint trails to compare), pendulum, inclined plane with force arrows, an electric circuit with moving electrons and a glowing bulb, and waves. Gravity can be switched between Earth, Moon and Jupiter.
+  - **Physics experiments** (```` ```sim ````) with sliders and live formulas: projectile motion (earlier throws stay as faint trails to compare), pendulum, inclined plane with force arrows, an electric circuit with moving electrons and a glowing bulb, waves, **free fall** (a ball and a feather, with or without air), a **spring** with a live position–time graph, **collisions** of two carts (bouncing or sticking, momentum kept), a **convex lens** ray diagram (real and virtual images) and **refraction** of light with total internal reflection. Gravity can be switched between Earth, Moon and Jupiter.
+  - **Chemistry experiments** (```` ```sim ````): the **Bohr atom** for elements 1–20 (protons, neutrons, electron shells), a **chemical reaction** where the atoms of a balanced equation break apart and form the products (with a check that both sides have the same atoms), a **pH scale** with indicator colours, H⁺/OH⁻ ions and everyday examples, and the **gas laws** with a piston, moving particles and a pressure gauge.
   - **States of matter** (```` ```sim ```` with `"type": "states"`): particles in a jar change from a vibrating solid to a sliding liquid to a fast gas as the temperature slider passes the melting and boiling points.
 - **Room to read:** answers use the full width; the top bars slide away while scrolling down and come back when scrolling up; and the message box is a single line until it is tapped.
 - Chips under the input box (shown when it is tapped): 📎 attach a photo or PDF (photos are compressed for slow internet), 💡 تفکر عمیق (deeper thinking), 📝 آزمونک (quiz mode), 🌐 جستجوی وب (web search). Small coloured dots show which modes are on.
@@ -67,19 +72,19 @@
 
 ### Interactive human body for biology
 
-Homa can include an `anatomy` block in biology answers, opening the same full-screen viewer used by the globe. Students can rotate and zoom a bundled, schematic 3D body, switch between six body systems, tap 22 selectable organs/structures, read Dari explanations and understanding questions, and view the body from the front or back. Optional heartbeat/breathing animation, labels and a transparent body outline can be toggled. The model loads on demand without downloading external assets. Organ explanations remain accessible if WebGL is unavailable.
+Homa can include an `anatomy` block in biology answers. It opens a **real 3D human body**: [BodyParts3D](https://dbarchive.biosciencedbc.jp/en/bodyparts3d/), an adult male body built from medical scans by DBCLS (Japan). Students rotate and zoom, switch between eight body systems (digestive, breathing, blood, nerves, urinary, skeleton, muscles, skin), and tap any of 27 organs and bone groups to read a short Dari explanation and an understanding question. The organs Homa points out keep their colour, glow softly and get Dari labels; the rest of the body turns see-through, and the camera flies to them. A button makes the heart beat and the lungs breathe.
 
 Try: «بدن انسان را سه‌بعدی نشان بده و کار قلب را توضیح بده.»
 
-Supported systems: `all`, `respiratory`, `circulatory`, `digestive`, `nervous`, `skeletal`, `urinary`. Example response block:
-
 ````markdown
 ```anatomy
-{"title":"قلب و گردش خون","system":"circulatory","focus":"heart","note":"روی قلب و رگ‌ها بزنید."}
+{"title": "قلب و دوران خون", "system": "circulatory", "highlight": ["heart", "arteries", "veins"], "note": "روی قلب و رگ‌ها بزنید."}
 ```
 ````
 
-The geometry is deliberately simplified for school lessons; it is not a medical anatomy atlas. Part IDs and explanations are in `lib/visuals/anatomy.ts`; the teacher's supported format is documented in `lib/prompts/teacher.ts`.
+- Systems: `digestive`, `respiratory`, `circulatory`, `nervous`, `urinary`, `skeleton`, `muscular`, `skin` (leave it out for the whole body). Organ keys, Dari names, explanations and questions are in `lib/visuals/anatomy.ts`. Older blocks with `"focus"`, `"all"` or `"skeletal"` still work.
+- The model is one 1.6 MB file (`public/models/human-body.glb`), downloaded only when a body visual is opened and then reused. It is made by `scripts/build-body-model.mjs`, which merges about 870 BodyParts3D parts into 27 meshes, simplifies them to about 480,000 triangles and compresses them (meshopt).
+- It shows organs, bones, muscles and the main blood vessels, not cells, alveoli or nerves; vessel colours are symbolic.
 
 ## How it works
 
@@ -103,7 +108,7 @@ chat input ──────────────────▶ POST /api/c
   - A lease (`lease_until`, claimed with `FOR UPDATE SKIP LOCKED`) makes sure two runs never read the same book; at most 2 books are read at once.
   - Opening the Library restarts a run that was cut off, and a daily cron in `vercel.json` is the last safety net.
 - Large PDFs go straight from the browser to Vercel Blob, because Vercel functions accept at most a 4.5 MB request body.
-- Visuals are ```` ```globe ````, ```` ```molecule ```` and ```` ```sim ```` blocks with one JSON object each (`lib/visuals/parse.ts`). The molecule layout and the physics formulas are pure functions (`lib/visuals/molecules.ts`, `lib/visuals/physics.ts`). three.js and the map load only when a visual is opened.
+- Visuals are ```` ```globe ````, ```` ```molecule ````, ```` ```sim ```` and ```` ```anatomy ```` blocks with one JSON object each (`lib/visuals/parse.ts`). The molecule layout, physics formulas and chemistry (formula parser, equation balance, Bohr shells, pH, gas law) are pure functions (`lib/visuals/molecules.ts`, `lib/visuals/physics.ts`, `lib/visuals/chemistry.ts`). three.js, the map, the Earth photo and the body model load only when a visual is opened.
 
 ## اجرا روی کمپیوتر / Run locally
 
@@ -121,8 +126,9 @@ To try the UI without an API key, set `MOCK_AI=1` in `.env.local`. Demo answers 
 - an equation, Newton's second law or a right triangle shows the board;
 - «همسایه‌های افغانستان» shows the 3D Earth;
 - «شکل مولکول آب» shows a molecule;
-- «حرکت پرتابی», «رقاصک», «سطح مایل»، «مدار» or «موج» shows an experiment;
-- «ذوب و جوش آب» shows the states of matter.
+- «حرکت پرتابی», «رقاصک», «سطح مایل»، «مدار», «موج», «سقوط آزاد», «فنر», «تصادم», «عدسیه» or «انکسار نور» shows a physics experiment;
+- «ساختمان اتوم», «تعامل کیمیاوی», «تیزاب و قلوی» or «قانون گاز» shows a chemistry experiment; «ذوب و جوش آب» shows the states of matter;
+- «قلب» or «سیستم هاضمه» shows the 3D human body.
 
 ## نشر روی Vercel / Deploy on Vercel
 
@@ -154,10 +160,16 @@ Optional variables:
 - Book reading continues on the server after the page is closed. Keep the page open only until the upload bar finishes. If some pages could not be read (for example, the API was busy), «ادامه پردازش» on the book card tries them again.
 - Anyone who can open the site can upload and delete books. Add authentication before a public launch.
 
+## Credits
+
+- 3D human body: [BodyParts3D](https://dbarchive.biosciencedbc.jp/en/bodyparts3d/), © The Database Center for Life Science (DBCLS), [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). Adapted: parts merged into organ groups, simplified and compressed (see `public/models/ATTRIBUTION.md`).
+- Earth photo and relief: NASA Blue Marble and elevation imagery (public domain), via the [webgl-earth](https://github.com/turban/webgl-earth) project.
+- Country borders and rivers: [Natural Earth](https://www.naturalearthdata.com/) (public domain), through `world-atlas`.
+
 ## Development
 
 ```bash
-npm run test        # unit tests (vitest): Farsi text, PDF page checks, search, board, quiz, background worker, molecule shapes, physics formulas, visual specs
+npm run test        # unit tests (vitest): Farsi text, PDF page checks, search, board, quiz, background worker, molecule shapes, physics and chemistry formulas, visual specs, the body model
 npm run lint
 npm run typecheck
 npm run build

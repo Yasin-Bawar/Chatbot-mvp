@@ -29,7 +29,8 @@ export function PhCanvas({ p, playing }: SimProps) {
     const bw = Math.min(w * 0.5, 300);
     const bh = Math.min(h * 0.56, 260);
     const bx = (w - bw) / 2;
-    const by = 34;
+    // Beaker and scale together, in the middle of the page.
+    const by = Math.max(30, (h - (bh + 70)) / 2);
     const level = by + bh * 0.22;
     const wave = playing ? Math.sin(time * 2) * 2 : 0;
     ctx.fillStyle = color;

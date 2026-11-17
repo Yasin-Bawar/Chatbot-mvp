@@ -110,16 +110,19 @@ function place(mols: Molecule[], box: { x: number; y: number; w: number; h: numb
     const scale = Math.min(box.w / cols, box.h / rows) / (2 * biggest * 1.18);
     if (scale > best.scale) best = { cols, rows, scale };
   }
-  const s = Math.min(best.scale, 22);
-  const cw = box.w / best.cols;
-  const ch = box.h / best.rows;
+  const s = Math.min(best.scale, 36);
+  // Cells just big enough for the largest molecule; the block sits in the middle of the box.
+  const cell = Math.min(box.w / best.cols, box.h / best.rows, 2 * biggest * 1.18 * s * 1.15);
+  const cw = cell;
+  const ch = cell;
+  const top = box.y + (box.h - best.rows * ch) / 2;
   const atoms: { el: string; pos: Pt; mol: number; centre: Pt }[] = [];
   const bubbles: { centre: Pt; r: number }[] = [];
   mols.forEach((m, i) => {
     const row = Math.floor(i / best.cols);
     const inRow = Math.min(best.cols, mols.length - row * best.cols);
     const col = i % best.cols;
-    const centre: Pt = [box.x + (box.w - inRow * cw) / 2 + (col + 0.5) * cw, box.y + (row + 0.5) * ch];
+    const centre: Pt = [box.x + (box.w - inRow * cw) / 2 + (col + 0.5) * cw, top + (row + 0.5) * ch];
     bubbles.push({ centre, r: (m.size + 0.35) * s });
     for (const a of m.atoms) atoms.push({ el: a.el, pos: [centre[0] + a.at[0] * s, centre[1] + a.at[1] * s], mol: i, centre });
   });
@@ -155,7 +158,7 @@ export function ReactionCanvas({ playing, run, accent, equation }: SimProps) {
     const time = t.current;
 
     grid(ctx, w, h);
-    text(ctx, equationText(eq), w / 2, 24, { size: 16, weight: 700, color: C.ink });
+    text(ctx, equationText(eq), w / 2, 26, { size: Math.min(20, Math.max(14, w / 40)), weight: 700, color: C.ink });
 
     const top = 50;
     const arrowW = Math.min(70, w * 0.1);
@@ -180,7 +183,7 @@ export function ReactionCanvas({ playing, run, accent, equation }: SimProps) {
     ctx.lineTo(ax + arrowW / 2 - 14, ay + 7);
     ctx.closePath();
     ctx.fill();
-    text(ctx, eq.balanced ? "✓" : "⚠", ax, ay - 22, { size: 18, weight: 800, color: eq.balanced ? accent : C.warm });
+    text(ctx, eq.balanced ? "✓" : "⚠", ax, ay - 24, { size: 24, weight: 800, color: eq.balanced ? accent : C.warm });
     if (!eq.balanced) text(ctx, "معادله متوازن نیست", ax, ay + 26, { size: 12, color: C.warm, weight: 700 });
 
     // Phases of the animation.

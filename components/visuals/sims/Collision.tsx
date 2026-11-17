@@ -51,6 +51,8 @@ export function CollisionCanvas({ p, playing, run, accent }: SimProps) {
 
     grid(ctx, w, h);
     const k = (w - 40) / TRACK;
+    // Bigger carts on big screens.
+    const size = Math.max(1, Math.min(1.8, Math.min(w, h * 1.6) / 560));
     const X = (m: number) => 20 + m * k;
     const rail = h * 0.62;
 
@@ -67,8 +69,8 @@ export function CollisionCanvas({ p, playing, run, accent }: SimProps) {
     const cart = (x: number, len: number, mass: number, fill: string, v: number, name: string) => {
       const left = X(x);
       const cw = len * k;
-      const ch = 24 + 6 * Math.sqrt(mass);
-      const top = rail - 10 - ch;
+      const ch = (24 + 6 * Math.sqrt(mass)) * size;
+      const top = rail - 10 * size - ch;
       ctx.fillStyle = fill;
       ctx.strokeStyle = C.ink;
       ctx.lineWidth = 1.5;
@@ -79,7 +81,7 @@ export function CollisionCanvas({ p, playing, run, accent }: SimProps) {
       for (const wx of [left + cw * 0.25, left + cw * 0.75]) {
         ctx.fillStyle = C.ink;
         ctx.beginPath();
-        ctx.arc(wx, rail - 6, 6, 0, Math.PI * 2);
+        ctx.arc(wx, rail - 6 * size, 6 * size, 0, Math.PI * 2);
         ctx.fill();
       }
       text(ctx, `${fmt(mass)} kg`, left + cw / 2, top + ch / 2, {

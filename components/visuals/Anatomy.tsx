@@ -45,6 +45,9 @@ const ICONS: Record<BodySystem | "all", React.ReactNode> = {
   skin: <Hand />,
 };
 
+/** Where on a part its name sits, as a share of its height (default: the middle). */
+const LABEL_HEIGHT: Record<string, number> = { arteries: 0.32, veins: 0.75, ribs: 0.7, spine: 0.4 };
+
 /** Parts that move when "alive" is on (heartbeat, breathing). */
 const MOVING = ["heart", "lungs", "diaphragm"];
 
@@ -168,11 +171,25 @@ export default function Anatomy({ spec }: { spec: AnatomySpec }) {
     let time = 0;
     let beat = 0;
 
-    /** Front-surface point of a part, where its name goes. */
+    /** A point on the front of a part, where its name goes (arteries and veins at different heights). */
     const anchorOf = (k: string) => {
-      const box = meshes.get(k)!.geometry.boundingBox!;
-      const c = box.getCenter(new THREE.Vector3());
-      return new THREE.Vector3(c.x, c.y, box.max.z * 0.6 + c.z * 0.4);
+      const geometry = meshes.get(k)!.geometry;
+      const box = geometry.boundingBox!;
+      const size = box.getSize(new THREE.Vector3());
+      const target = new THREE.Vector3((box.min.x + box.max.x) / 2, box.min.y + size.y * (LABEL_HEIGHT[k] ?? 0.5), box.max.z);
+      const pos = geometry.getAttribute("position");
+      const v = new THREE.Vector3();
+      const best = new THREE.Vector3();
+      let bestD = Infinity;
+      for (let i = 0; i < pos.count; i += 3) {
+        v.fromBufferAttribute(pos, i);
+        const d = v.distanceToSquared(target);
+        if (d < bestD) {
+          bestD = d;
+          best.copy(v);
+        }
+      }
+      return best;
     };
 
     const apply = (sys: BodySystem | null, fly: boolean) => {
@@ -196,9 +213,10 @@ export default function Anatomy({ spec }: { spec: AnatomySpec }) {
         labels.push(stage.addLabel(ORGANS[k].name, anchorOf(k), { className: "visual-label-organ", priority: 2 }));
       }
       if (!fly) return;
-      // Fly to what matters: the organs pointed out, else the system, else the whole body.
-      const focus = highlight.length
-        ? highlight
+      // Fly to what matters: the organs pointed out (if this view shows them), else the system, else the whole body.
+      const shown = highlight.filter((k) => meshes.get(k)?.visible && lookOf(k, sys, highlight).opacity >= 1);
+      const focus = shown.length
+        ? shown
         : sys && !["skin", "muscular", "skeleton"].includes(sys)
           ? organsOf(sys)
           : [...meshes.keys()].filter((k) => k !== "muscles");
@@ -337,6 +355,11 @@ export default function Anatomy({ spec }: { spec: AnatomySpec }) {
   const choose = (next: BodySystem | null) => {
     setSystem(next);
     applyRef.current(next, true);
+    // Close the card of an organ this view hides.
+    if (selectedRef.current && lookOf(selectedRef.current, next, spec.highlight).opacity < 0.3) {
+      selectedRef.current = null;
+      setSelected(null);
+    }
   };
   const closeInfo = () => {
     selectedRef.current = null;
@@ -355,8 +378,8 @@ export default function Anatomy({ spec }: { spec: AnatomySpec }) {
       {status === "loading" && (
         <div className="visual-loading">{progress > 0 ? `${toFaDigits(String(Math.round(progress * 100)))}٪` : "…"}</div>
       )}
-      <div className="visual-credit" dir="ltr">
-        BodyParts3D © DBCLS · CC BY 4.0
+      <div className="visual-credit">
+        <bdi dir="ltr">BodyParts3D © DBCLS · CC BY 4.0</bdi>
       </div>
 
       {organ && status === "ready" && (

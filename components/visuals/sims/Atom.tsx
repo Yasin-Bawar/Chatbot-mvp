@@ -21,7 +21,7 @@ export function atomReadouts(p: Record<string, number>): Readout[] {
       label: "لایه‌ها",
       value: bohrShells(e.z)
         .map((n) => fmt(n, 0))
-        .join(" · "),
+        .join("، "),
     },
   ];
 }
