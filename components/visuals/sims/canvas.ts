@@ -161,3 +161,9 @@ export function dot(ctx: CanvasRenderingContext2D, x: number, y: number, r: numb
   ctx.stroke();
   ctx.restore();
 }
+
+/** A repeatable "random" number in [0, 1) for a seed (same layout on every render). */
+export function seeded(n: number): number {
+  const x = Math.sin(n * 12.9898 + 78.233) * 43758.5453;
+  return x - Math.floor(x);
+}

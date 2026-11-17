@@ -1,6 +1,8 @@
+import type { BodySystem } from "./anatomy";
+
 /**
- * Interactive visuals Dana can put in an answer, each as one JSON object in a
- * fenced block: ```globe, ```molecule or ```sim. They open full screen.
+ * Interactive visuals Homa can put in an answer, each as one JSON object in a
+ * fenced block: ```globe, ```molecule, ```sim or ```body. They open full screen.
  */
 
 export type LatLon = { lat: number; lon: number };
@@ -17,6 +19,10 @@ export interface GlobeSpec {
   highlight: { name: string; label?: string; color?: string }[];
   markers: { lat: number; lon: number; label: string; color?: string }[];
   routes: { points: [number, number][]; label?: string; color?: string }[];
+  /** "satellite" (real photo of the Earth, default) or "map" (clean political map). */
+  view: "satellite" | "map";
+  /** Show river names (rivers are always drawn). */
+  rivers: boolean;
 }
 
 export interface MoleculeAtom {
@@ -37,7 +43,22 @@ export interface MoleculeSpec {
   bonds: [number, number, number][];
 }
 
-export type SimType = "projectile" | "pendulum" | "incline" | "circuit" | "wave" | "states";
+export type SimType =
+  | "projectile"
+  | "pendulum"
+  | "incline"
+  | "circuit"
+  | "wave"
+  | "states"
+  | "freefall"
+  | "spring"
+  | "collision"
+  | "lens"
+  | "refraction"
+  | "atom"
+  | "reaction"
+  | "ph"
+  | "gas";
 
 export interface SimSpec {
   kind: "sim";
@@ -48,9 +69,21 @@ export interface SimSpec {
   params: Record<string, number>;
   /** For "states": the substance and its melting / boiling points in °C. */
   substance?: { name: string; melt: number; boil: number };
+  /** For "reaction": a balanced equation such as "2H2 + O2 -> 2H2O". */
+  equation?: string;
 }
 
-export type VisualSpec = GlobeSpec | MoleculeSpec | SimSpec;
+export interface BodySpec {
+  kind: "body";
+  title: string;
+  note?: string;
+  /** Which body system to show (lib/visuals/anatomy.ts); null = the whole body. */
+  system: BodySystem | null;
+  /** Organ keys to point out with labels. */
+  highlight: string[];
+}
+
+export type VisualSpec = GlobeSpec | MoleculeSpec | SimSpec | BodySpec;
 export type VisualKind = VisualSpec["kind"];
 
-export const VISUAL_LANGS: readonly VisualKind[] = ["globe", "molecule", "sim"];
+export const VISUAL_LANGS: readonly VisualKind[] = ["globe", "molecule", "sim", "body"];

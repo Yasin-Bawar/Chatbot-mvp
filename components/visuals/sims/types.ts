@@ -11,7 +11,9 @@ export interface SimProps {
   playing: boolean;
   /** Changes when the student presses "again". */
   run: number;
-  /** The subject colour (physics blue, chemistry green). */
+  /** The subject colour (physics blue, chemistry violet). */
   accent: string;
   substance?: { name: string; melt: number; boil: number };
+  /** For the reaction experiment. */
+  equation?: string;
 }

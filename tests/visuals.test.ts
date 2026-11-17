@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { countryLabel, greatCircle, latLonToVector, resolveCountry } from "@/lib/visuals/geo";
+import { countryLabel, greatCircle, latLonToVector, pointInPolygons, resolveCountry, vectorToLatLon } from "@/lib/visuals/geo";
 import { parseVisual } from "@/lib/visuals/parse";
 
 describe("visual specs", () => {
@@ -44,6 +44,21 @@ describe("visual specs", () => {
     expect(parseVisual("sim", `not json`)).toBeNull();
   });
 
+  it("parses the new experiments", () => {
+    const atom = parseVisual("sim", '{"type":"bohr","element":"Na"}');
+    expect(atom).toMatchObject({ kind: "sim", type: "atom", params: { z: 11 } });
+    const reaction = parseVisual("sim", '{"type":"reaction","equation":"CH4 + 2O2 -> CO2 + 2H2O"}');
+    expect(reaction).toMatchObject({ type: "reaction", equation: "CH4 + 2O2 -> CO2 + 2H2O" });
+    const named = parseVisual("sim", '{"type":"chemical reaction","reaction":"photosynthesis"}');
+    expect(named).toMatchObject({ type: "reaction", equation: "6CO2 + 6H2O -> C6H12O6 + 6O2" });
+    const broken = parseVisual("sim", '{"type":"reaction","equation":"magic"}');
+    expect(broken).toMatchObject({ equation: "2H2 + O2 -> 2H2O" });
+    expect(parseVisual("sim", '{"type":"snell","angle":30}')).toMatchObject({ type: "refraction", params: { angle: 30 } });
+    expect(parseVisual("sim", '{"type":"free fall"}')).toMatchObject({ type: "freefall" });
+    for (const t of ["spring", "collision", "lens", "ph", "gas"])
+      expect(parseVisual("sim", `{"type":"${t}"}`)).toMatchObject({ type: t });
+  });
+
   it("repairs LaTeX backslashes in notes", () => {
     const spec = parseVisual("sim", `{"type":"pendulum","note":"دوره: $T = 2\\pi\\sqrt{L/g}$"}`);
     expect(spec?.note).toContain("\\pi");
@@ -65,6 +80,50 @@ describe("globe geography helpers", () => {
     expect(countryLabel("Afghanistan")).toBe("افغانستان");
     expect(countryLabel("Iran", "پارس")).toBe("پارس");
     expect(countryLabel("Narnia")).toBe("Narnia");
+  });
+
+  it("turns a point on the globe back into lat/lon", () => {
+    for (const [lat, lon] of [
+      [34.5, 69.2],
+      [-33.9, 151.2],
+      [0, -179],
+    ]) {
+      const ll = vectorToLatLon(...latLonToVector(lat, lon, 1.02));
+      expect(ll.lat).toBeCloseTo(lat, 6);
+      expect(ll.lon).toBeCloseTo(lon, 6);
+    }
+  });
+
+  it("finds which country a tap is in (with holes and the date line)", () => {
+    const square = [
+      [
+        [60, 30],
+        [75, 30],
+        [75, 38],
+        [60, 38],
+        [60, 30],
+      ],
+      [
+        [66, 33],
+        [68, 33],
+        [68, 35],
+        [66, 35],
+        [66, 33],
+      ],
+    ];
+    expect(pointInPolygons(62, 32, [square])).toBe(true);
+    expect(pointInPolygons(67, 34, [square])).toBe(false); // inside the hole
+    expect(pointInPolygons(80, 32, [square])).toBe(false);
+    const acrossDateLine = [
+      [
+        [170, -20],
+        [190, -20],
+        [190, -10],
+        [170, -10],
+        [170, -20],
+      ],
+    ];
+    expect(pointInPolygons(-175, -15, [acrossDateLine])).toBe(true);
   });
 
   it("maps lat/lon to the unit sphere and draws great circles", () => {

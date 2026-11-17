@@ -1,26 +1,41 @@
 "use client";
 
-import { Crosshair, Tags } from "lucide-react";
+import { Crosshair, Map as MapIcon, Satellite, Tags } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 import type { Feature, Geometry, MultiPolygon, Polygon, Position } from "geojson";
 import type { GeometryCollection, Topology } from "topojson-specification";
-import { countryLabel, greatCircle, latLonToVector, resolveCountry } from "@/lib/visuals/geo";
+import {
+  countryLabel,
+  DARI_RIVER,
+  greatCircle,
+  latLonToVector,
+  pointInPolygons,
+  resolveCountry,
+  vectorToLatLon,
+} from "@/lib/visuals/geo";
 import type { GlobeSpec } from "@/lib/visuals/types";
-import { createStage, easeInOut, NoWebGLError, type Stage } from "./stage";
+import { createStage, easeInOut, NoWebGLError, type Label, type Stage } from "./stage";
 import { VisualError } from "./VisualError";
 
-const TEX_W = 2048;
-const TEX_H = 1024;
-// Calm, map-like colours: one sand tone for land, the geography teal for the
-// main country and a pale teal for the others that are highlighted.
+/**
+ * The 3D Earth. Two looks:
+ * - "satellite": NASA Blue Marble photo with relief (public domain), country
+ *   borders and highlighted countries drawn on top;
+ * - "map": a clean political map.
+ * Country shapes: Natural Earth 1:50m (world-atlas). Rivers: Natural Earth.
+ */
+
+type View = "satellite" | "map";
+type CountryFeature = Feature<Polygon | MultiPolygon, { name: string }>;
+type River = { name: string; lines: [number, number][][] };
+
+// Map look: one sand tone for land, the geography teal for the main country.
 const OCEAN = "#21476d";
 const LAND = "#f1ead8";
 const MAIN = "#0d9488";
 const OTHER = "#99d8cf";
 const DISTANCE = [0, 3.1, 2.35, 1.8, 1.42];
-
-type CountryFeature = Feature<Polygon | MultiPolygon, { name: string }>;
 
 function polygonsOf(geometry: Geometry): Position[][][] {
   if (geometry.type === "Polygon") return [geometry.coordinates];
@@ -42,82 +57,124 @@ function unwrap(ring: Position[]): Position[] {
   return out;
 }
 
-const px = (lon: number) => ((lon + 180) / 360) * TEX_W;
-const py = (lat: number) => ((90 - lat) / 180) * TEX_H;
-
-function traceRing(ctx: CanvasRenderingContext2D, ring: Position[], shift: number) {
-  ring.forEach(([lon, lat], i) => {
-    const x = px(lon) + shift;
-    const y = py(lat);
-    if (i === 0) ctx.moveTo(x, y);
-    else ctx.lineTo(x, y);
-  });
-  ctx.closePath();
+interface Painter {
+  canvas: HTMLCanvasElement;
+  paint: (view: View) => void;
 }
 
-/** Draws a flat (equirectangular) political map that is wrapped around the sphere. */
-function drawMap(countries: CountryFeature[], highlighted: Map<string, string>): HTMLCanvasElement {
+/** Paints the flat (equirectangular) texture that is wrapped around the sphere. */
+function makePainter(
+  width: number,
+  countries: CountryFeature[],
+  highlighted: Map<string, string>,
+  rivers: River[],
+  photo: HTMLImageElement | null,
+): Painter {
+  const W = width;
+  const H = width / 2;
+  const s = W / 2048; // line widths are designed for a 2048 px texture
   const canvas = document.createElement("canvas");
-  canvas.width = TEX_W;
-  canvas.height = TEX_H;
+  canvas.width = W;
+  canvas.height = H;
   const ctx = canvas.getContext("2d")!;
+  const px = (lon: number) => ((lon + 180) / 360) * W;
+  const py = (lat: number) => ((90 - lat) / 180) * H;
+  const rings = countries.map((f) => polygonsOf(f.geometry).flatMap((polygon) => polygon.map(unwrap)));
 
-  ctx.fillStyle = OCEAN;
-  ctx.fillRect(0, 0, TEX_W, TEX_H);
-
-  // Latitude / longitude grid every 15°.
-  ctx.strokeStyle = "rgba(255,255,255,0.05)";
-  ctx.lineWidth = 1;
-  for (let lon = -180; lon <= 180; lon += 15) {
+  const traceCountry = (index: number) => {
     ctx.beginPath();
-    ctx.moveTo(px(lon), 0);
-    ctx.lineTo(px(lon), TEX_H);
-    ctx.stroke();
-  }
-  for (let lat = -75; lat <= 75; lat += 15) {
-    ctx.beginPath();
-    ctx.moveTo(0, py(lat));
-    ctx.lineTo(TEX_W, py(lat));
-    ctx.stroke();
-  }
-  // Equator.
-  ctx.strokeStyle = "rgba(255,255,255,0.14)";
-  ctx.setLineDash([10, 8]);
-  ctx.beginPath();
-  ctx.moveTo(0, py(0));
-  ctx.lineTo(TEX_W, py(0));
-  ctx.stroke();
-  ctx.setLineDash([]);
-
-  const dim = highlighted.size > 0;
-  const paint = (feature: CountryFeature, emphasis: boolean) => {
-    const name = feature.properties.name;
-    const color = highlighted.get(name);
-    if (emphasis !== Boolean(color)) return;
-    ctx.beginPath();
-    for (const polygon of polygonsOf(feature.geometry)) {
-      for (const raw of polygon) {
-        const ring = unwrap(raw);
-        const xs = ring.map(([lon]) => px(lon));
-        const minX = Math.min(...xs);
-        const maxX = Math.max(...xs);
-        traceRing(ctx, ring, 0);
-        if (minX < 0) traceRing(ctx, ring, TEX_W);
-        if (maxX > TEX_W) traceRing(ctx, ring, -TEX_W);
+    for (const ring of rings[index]) {
+      for (const shift of [0, W, -W]) {
+        const xs = ring.map(([lon]) => px(lon) + shift);
+        if (Math.max(...xs) < 0 || Math.min(...xs) > W) continue;
+        ring.forEach(([lon, lat], i) => (i === 0 ? ctx.moveTo(px(lon) + shift, py(lat)) : ctx.lineTo(px(lon) + shift, py(lat))));
+        ctx.closePath();
       }
     }
-    ctx.fillStyle = name === "Antarctica" ? "#f1f5f9" : (color ?? LAND);
-    ctx.globalAlpha = color || !dim ? 1 : 0.9;
-    ctx.fill("evenodd");
-    ctx.globalAlpha = 1;
-    ctx.lineJoin = "round";
-    ctx.strokeStyle = color ? "#ffffff" : "rgba(60,50,30,0.3)";
-    ctx.lineWidth = color ? 2.2 : 1;
+  };
+
+  const grid = (alpha: number) => {
+    ctx.strokeStyle = `rgba(255,255,255,${alpha})`;
+    ctx.lineWidth = s;
+    ctx.beginPath();
+    for (let lon = -180; lon <= 180; lon += 15) {
+      ctx.moveTo(px(lon), 0);
+      ctx.lineTo(px(lon), H);
+    }
+    for (let lat = -75; lat <= 75; lat += 15) {
+      ctx.moveTo(0, py(lat));
+      ctx.lineTo(W, py(lat));
+    }
     ctx.stroke();
   };
-  countries.forEach((f) => paint(f, false));
-  countries.forEach((f) => paint(f, true));
-  return canvas;
+
+  const drawRivers = (color: string) => {
+    ctx.strokeStyle = color;
+    ctx.lineJoin = "round";
+    ctx.lineCap = "round";
+    for (const river of rivers) {
+      ctx.lineWidth = (river.name in DARI_RIVER ? 1.6 : 1) * s;
+      ctx.beginPath();
+      for (const line of river.lines) {
+        line.forEach(([lat, lon], i) => (i === 0 ? ctx.moveTo(px(lon), py(lat)) : ctx.lineTo(px(lon), py(lat))));
+      }
+      ctx.stroke();
+    }
+  };
+
+  const paint = (view: View) => {
+    ctx.clearRect(0, 0, W, H);
+    if (view === "satellite" && photo) {
+      ctx.drawImage(photo, 0, 0, W, H);
+      grid(0.06);
+      drawRivers("rgba(147, 197, 253, 0.85)");
+      // Country borders, then the highlighted countries in see-through teal.
+      ctx.lineJoin = "round";
+      countries.forEach((f, i) => {
+        if (highlighted.has(f.properties.name)) return;
+        traceCountry(i);
+        ctx.strokeStyle = "rgba(255,255,255,0.45)";
+        ctx.lineWidth = 0.9 * s;
+        ctx.stroke();
+      });
+      countries.forEach((f, i) => {
+        const color = highlighted.get(f.properties.name);
+        if (!color) return;
+        traceCountry(i);
+        ctx.globalAlpha = color === MAIN ? 0.55 : 0.35;
+        ctx.fillStyle = color === OTHER ? MAIN : color;
+        ctx.fill("evenodd");
+        ctx.globalAlpha = 1;
+        ctx.strokeStyle = "#ffffff";
+        ctx.lineWidth = 2 * s;
+        ctx.stroke();
+      });
+      return;
+    }
+    ctx.fillStyle = OCEAN;
+    ctx.fillRect(0, 0, W, H);
+    grid(0.05);
+    const dim = highlighted.size > 0;
+    for (const emphasis of [false, true]) {
+      countries.forEach((f, i) => {
+        const name = f.properties.name;
+        const color = highlighted.get(name);
+        if (emphasis !== Boolean(color)) return;
+        traceCountry(i);
+        ctx.fillStyle = name === "Antarctica" ? "#f1f5f9" : (color ?? LAND);
+        ctx.globalAlpha = color || !dim ? 1 : 0.9;
+        ctx.fill("evenodd");
+        ctx.globalAlpha = 1;
+        ctx.lineJoin = "round";
+        ctx.strokeStyle = color ? "#ffffff" : "rgba(60,50,30,0.3)";
+        ctx.lineWidth = (color ? 2.2 : 1) * s;
+        ctx.stroke();
+      });
+      if (!emphasis) drawRivers("rgba(59, 130, 246, 0.55)");
+    }
+  };
+
+  return { canvas, paint };
 }
 
 /** Visual centre of a country: centroid of its largest ring. */
@@ -156,12 +213,12 @@ function atmosphere(): THREE.Mesh {
     vertexShader: `varying vec3 vNormal; varying vec3 vView;
       void main() { vNormal = normalize(normalMatrix * normal); vec4 mv = modelViewMatrix * vec4(position, 1.0); vView = normalize(-mv.xyz); gl_Position = projectionMatrix * mv; }`,
     fragmentShader: `varying vec3 vNormal; varying vec3 vView;
-      void main() { float rim = 1.0 - max(dot(vNormal, vView), 0.0); float glow = pow(rim, 2.6); gl_FragColor = vec4(0.55, 0.75, 1.0, 1.0) * glow * 0.45; }`,
+      void main() { float rim = 1.0 - max(dot(vNormal, vView), 0.0); float glow = pow(rim, 3.0); gl_FragColor = vec4(0.45, 0.7, 1.0, 1.0) * glow * 0.6; }`,
     blending: THREE.AdditiveBlending,
     transparent: true,
     depthWrite: false,
   });
-  return new THREE.Mesh(new THREE.SphereGeometry(1.035, 64, 48), material);
+  return new THREE.Mesh(new THREE.SphereGeometry(1.03, 64, 48), material);
 }
 
 function stars(): THREE.Points {
@@ -184,11 +241,24 @@ function stars(): THREE.Points {
   );
 }
 
+function loadImage(src: string): Promise<HTMLImageElement | null> {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.decoding = "async";
+    img.onload = () => resolve(img);
+    img.onerror = () => resolve(null); // the map look still works without the photo
+    img.src = src;
+  });
+}
+
 export default function Globe({ spec }: { spec: GlobeSpec }) {
   const mountRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<Stage | null>(null);
   const flyRef = useRef<(() => void) | null>(null);
+  const repaintRef = useRef<((view: View) => void) | null>(null);
   const [labels, setLabels] = useState(true);
+  const [view, setView] = useState<View>(spec.view);
+  const viewRef = useRef<View>(spec.view);
   const [status, setStatus] = useState<"loading" | "ready" | "nowebgl" | "error">("loading");
 
   useEffect(() => {
@@ -203,25 +273,31 @@ export default function Globe({ spec }: { spec: GlobeSpec }) {
       return;
     }
     stageRef.current = stage;
-    const { scene, camera, controls } = stage;
-    controls.minDistance = 1.2;
+    const { scene, camera, controls, renderer } = stage;
+    controls.minDistance = 1.15;
     controls.maxDistance = 5;
     controls.rotateSpeed = 0.45;
 
     scene.add(stars());
-    scene.add(new THREE.AmbientLight(0xffffff, 1.15));
-    const sun = new THREE.DirectionalLight(0xffffff, 1.5);
+    scene.add(new THREE.AmbientLight(0xffffff, 1.2));
+    const sun = new THREE.DirectionalLight(0xffffff, 1.6);
     sun.position.set(-2.5, 2, 3);
     camera.add(sun);
 
-    const earth = new THREE.Mesh(
-      new THREE.SphereGeometry(1, 128, 96),
-      new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.9, metalness: 0 }),
-    );
+    const material = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.92, metalness: 0 });
+    const earth = new THREE.Mesh(new THREE.SphereGeometry(1, 160, 120), material);
     // three.js puts longitude −180° at −x; turn the map to match latLonToVector.
     earth.rotation.y = -Math.PI / 2;
     scene.add(earth);
     scene.add(atmosphere());
+
+    // Relief: mountains such as the Hindu Kush catch the light.
+    new THREE.TextureLoader().load("/textures/earth-relief-2k.jpg", (relief) => {
+      if (disposed) return relief.dispose();
+      material.bumpMap = relief;
+      material.bumpScale = 3;
+      material.needsUpdate = true;
+    });
 
     // Camera: start a little to the west of the target and fly in.
     const portrait = mount.clientWidth < mount.clientHeight;
@@ -260,10 +336,9 @@ export default function Globe({ spec }: { spec: GlobeSpec }) {
       if (t >= 1) flight = null;
     });
 
-    // Markers: a dot and a pulsing ring, with a label.
+    // Markers: a dark dot with a white edge and a pulsing ring, with a label.
     const pulses: THREE.Mesh[] = [];
     spec.markers.forEach((m, i) => {
-      // A dark dot with a white edge reads on sand, teal and sea alike.
       const color = new THREE.Color(m.color ?? "#1e293b");
       const p = vec(m.lat, m.lon, 1.003);
       const edge = new THREE.Mesh(new THREE.SphereGeometry(0.014, 16, 12), new THREE.MeshBasicMaterial({ color: 0xffffff }));
@@ -297,7 +372,7 @@ export default function Globe({ spec }: { spec: GlobeSpec }) {
       }
     });
 
-    // Routes: glowing arcs with a travelling light.
+    // Routes: arcs with a travelling light.
     const travellers: { mesh: THREE.Mesh; curve: THREE.CatmullRomCurve3; offset: number }[] = [];
     spec.routes.forEach((route, i) => {
       const color = new THREE.Color(route.color ?? "#f59e0b");
@@ -306,22 +381,21 @@ export default function Globe({ spec }: { spec: GlobeSpec }) {
         const arc = greatCircle(route.points[s], route.points[s + 1], 24);
         arc.forEach(([x, y, z], k) => {
           if (s > 0 && k === 0) return;
-          const t = k / 24;
-          pts.push(new THREE.Vector3(x, y, z).multiplyScalar(1.004 + 0.035 * Math.sin(Math.PI * t)));
+          pts.push(new THREE.Vector3(x, y, z).multiplyScalar(1.004 + 0.035 * Math.sin(Math.PI * (k / 24))));
         });
       }
       const curve = new THREE.CatmullRomCurve3(pts);
-      const tube = new THREE.Mesh(
-        new THREE.TubeGeometry(curve, pts.length * 2, 0.0045, 8, false),
-        new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.9 }),
+      scene.add(
+        new THREE.Mesh(
+          new THREE.TubeGeometry(curve, pts.length * 2, 0.0045, 8, false),
+          new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.9 }),
+        ),
       );
-      scene.add(tube);
       const light = new THREE.Mesh(new THREE.SphereGeometry(0.012, 12, 10), new THREE.MeshBasicMaterial({ color: 0xffffff }));
       scene.add(light);
       travellers.push({ mesh: light, curve, offset: i * 0.33 });
       if (route.label) {
-        const mid = curve.getPoint(0.5);
-        stage.addLabel(route.label, mid.clone().multiplyScalar(1.03), {
+        stage.addLabel(route.label, curve.getPoint(0.5).multiplyScalar(1.03), {
           className: "visual-label-route",
           surface: true,
           priority: 1,
@@ -332,14 +406,51 @@ export default function Globe({ spec }: { spec: GlobeSpec }) {
       for (const t of travellers) t.mesh.position.copy(t.curve.getPoint((time * 0.18 + t.offset) % 1));
     });
 
-    // The map itself (country shapes load from a small bundled file).
+    // Tap a country to see its name (a tap, not a drag).
+    let tapLabel: Label | null = null;
+    let tapTimer = 0;
+    let countriesRef: CountryFeature[] = [];
+    const raycaster = new THREE.Raycaster();
+    let down: { x: number; y: number; t: number } | null = null;
+    const onDown = (e: PointerEvent) => (down = { x: e.clientX, y: e.clientY, t: performance.now() });
+    const onUp = (e: PointerEvent) => {
+      if (!down || Math.hypot(e.clientX - down.x, e.clientY - down.y) > 8 || performance.now() - down.t > 500) return;
+      const rect = renderer.domElement.getBoundingClientRect();
+      const ndc = new THREE.Vector2(
+        ((e.clientX - rect.left) / rect.width) * 2 - 1,
+        -((e.clientY - rect.top) / rect.height) * 2 + 1,
+      );
+      raycaster.setFromCamera(ndc, camera);
+      const hit = raycaster.intersectObject(earth)[0];
+      if (!hit || !tapLabel) return;
+      const { lat, lon } = vectorToLatLon(hit.point.x, hit.point.y, hit.point.z);
+      const country = countriesRef.find((c) => pointInPolygons(lon, lat, polygonsOf(c.geometry)));
+      if (!country) return;
+      tapLabel.el.textContent = countryLabel(country.properties.name);
+      tapLabel.size = undefined;
+      tapLabel.position.copy(hit.point).multiplyScalar(1.03);
+      tapLabel.visible = true;
+      window.clearTimeout(tapTimer);
+      tapTimer = window.setTimeout(() => tapLabel && (tapLabel.visible = false), 2500);
+    };
+    renderer.domElement.addEventListener("pointerdown", onDown);
+    renderer.domElement.addEventListener("pointerup", onUp);
+
+    // Map data, rivers and the satellite photo load only when the Earth opens.
     (async () => {
       try {
-        const [{ feature }, atlas] = await Promise.all([import("topojson-client"), import("world-atlas/countries-110m.json")]);
+        const [{ feature }, atlas, rivers, photo] = await Promise.all([
+          import("topojson-client"),
+          import("world-atlas/countries-50m.json"),
+          fetch("/data/rivers.json")
+            .then((r) => (r.ok ? (r.json() as Promise<River[]>) : []))
+            .catch(() => [] as River[]),
+          loadImage("/textures/earth-2k.jpg"),
+        ]);
         if (disposed) return;
         const topology = (atlas.default ?? atlas) as unknown as Topology<{ countries: GeometryCollection<{ name: string }> }>;
-        const collection = feature(topology, topology.objects.countries);
-        const countries = collection.features as CountryFeature[];
+        const countries = feature(topology, topology.objects.countries).features as CountryFeature[];
+        countriesRef = countries;
         const names = countries.map((c) => c.properties.name);
 
         const highlighted = new Map<string, string>();
@@ -351,18 +462,37 @@ export default function Globe({ spec }: { spec: GlobeSpec }) {
           highlightLabels.push({ name, label: countryLabel(name, h.label) });
         });
 
-        const texture = new THREE.CanvasTexture(drawMap(countries, highlighted));
+        // A sharper texture on bigger screens.
+        const big = Math.min(window.screen.width, window.screen.height) >= 700;
+        const width = big && renderer.capabilities.maxTextureSize >= 4096 ? 4096 : 2048;
+        const painter = makePainter(width, countries, highlighted, rivers, photo);
+        const texture = new THREE.CanvasTexture(painter.canvas);
         texture.colorSpace = THREE.SRGBColorSpace;
-        texture.anisotropy = Math.min(8, stage.renderer.capabilities.getMaxAnisotropy());
-        const material = earth.material as THREE.MeshStandardMaterial;
+        texture.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
+        const repaint = (v: View) => {
+          painter.paint(v);
+          texture.needsUpdate = true;
+        };
+        repaint(viewRef.current);
+        repaintRef.current = repaint;
         material.map = texture;
         material.needsUpdate = true;
 
         for (const { name, label } of highlightLabels) {
-          const country = countries.find((c) => c.properties.name === name)!;
-          const c = countryCentre(country);
+          const c = countryCentre(countries.find((x) => x.properties.name === name)!);
           stage.addLabel(label, vec(c.lat, c.lon, 1.02), { className: "visual-label-country", surface: true, priority: 3 });
         }
+        if (spec.rivers) {
+          for (const river of rivers) {
+            const fa = DARI_RIVER[river.name];
+            if (!fa) continue;
+            const longest = river.lines.reduce((a, b) => (b.length > a.length ? b : a), river.lines[0]);
+            const [lat, lon] = longest[Math.floor(longest.length / 2)];
+            stage.addLabel(fa, vec(lat, lon, 1.02), { className: "visual-label-river", surface: true, priority: 1 });
+          }
+        }
+        tapLabel = stage.addLabel("", new THREE.Vector3(), { className: "visual-label-country", surface: true, priority: 4 });
+        tapLabel.visible = false;
         setStatus("ready");
         flyToFocus();
       } catch (err) {
@@ -373,16 +503,27 @@ export default function Globe({ spec }: { spec: GlobeSpec }) {
 
     return () => {
       disposed = true;
+      window.clearTimeout(tapTimer);
+      renderer.domElement.removeEventListener("pointerdown", onDown);
+      renderer.domElement.removeEventListener("pointerup", onUp);
       controls.removeEventListener("start", stopAuto);
       stage.dispose();
       stageRef.current = null;
       flyRef.current = null;
+      repaintRef.current = null;
     };
   }, [spec]);
 
   useEffect(() => {
     stageRef.current?.setLabelsVisible(labels);
   }, [labels]);
+
+  const switchView = () => {
+    const next: View = view === "satellite" ? "map" : "satellite";
+    viewRef.current = next;
+    setView(next);
+    repaintRef.current?.(next);
+  };
 
   if (status === "nowebgl") return <VisualError kind="nowebgl" />;
   if (status === "error") return <VisualError kind="error" />;
@@ -412,7 +553,17 @@ export default function Globe({ spec }: { spec: GlobeSpec }) {
         >
           <Tags />
         </button>
+        <button
+          type="button"
+          onClick={switchView}
+          className="visual-icon-btn"
+          aria-label={view === "satellite" ? "نقشه سیاسی" : "تصویر ماهواره‌ای"}
+          title={view === "satellite" ? "نقشه" : "ماهواره"}
+        >
+          {view === "satellite" ? <MapIcon /> : <Satellite />}
+        </button>
       </div>
+      <div className="visual-credit">{view === "satellite" ? "تصویر زمین: NASA" : "Natural Earth"}</div>
     </div>
   );
 }

@@ -16,6 +16,7 @@ import { CodeBlock } from "./CodeBlock";
 import { hastText } from "./hast";
 import { QuizCard } from "@/components/quiz/QuizCard";
 import { VisualCard } from "@/components/visuals/VisualCard";
+import { VISUAL_LANGS, type VisualKind } from "@/lib/visuals/types";
 
 const remarkPlugins = [remarkGfm, remarkMath];
 const rehypePlugins: Options["rehypePlugins"] = [rehypeKatex, [rehypeHighlight, { detect: false }]];
@@ -27,7 +28,11 @@ function Callout({ text, children }: { text: string; children: ReactNode }) {
   const trimmed = text.trim();
   const kind = trimmed.startsWith("⚠") ? "warn" : trimmed.startsWith("✅") ? "ok" : trimmed.startsWith("💡") ? "tip" : "info";
   const styles = {
-    tip: { box: "border-[#dedbff] bg-gradient-to-l from-[#f5f3ff] to-[#fbfaff]", icon: "bg-gradient-brand text-white", Icon: Lightbulb },
+    tip: {
+      box: "border-[#dedbff] bg-gradient-to-l from-[#f5f3ff] to-[#fbfaff]",
+      icon: "bg-gradient-brand text-white",
+      Icon: Lightbulb,
+    },
     info: { box: "border-[#dbeafe] bg-[#f5f9ff]", icon: "bg-[#3b82f6] text-white", Icon: Info },
     warn: { box: "border-[#fde7c3] bg-[#fffaf0]", icon: "bg-[#f59e0b] text-white", Icon: TriangleAlert },
     ok: { box: "border-[#c9f0d6] bg-[#f3fcf6]", icon: "bg-[#16a34a] text-white", Icon: CircleCheck },
@@ -69,8 +74,8 @@ const components: Components = {
     const text = hastText(code).replace(/\n$/, "");
     if (language === "quiz") return <QuizCard raw={text} streaming={streaming} />;
     if (language === "board") return <Board raw={text} streaming={streaming} />;
-    if (language === "globe" || language === "molecule" || language === "sim") {
-      return <VisualCard lang={language} raw={text} streaming={streaming} />;
+    if ((VISUAL_LANGS as readonly string[]).includes(language)) {
+      return <VisualCard lang={language as VisualKind} raw={text} streaming={streaming} />;
     }
     return (
       <CodeBlock language={language} code={text}>
@@ -124,20 +129,12 @@ function splitBlocks(text: string): string[] {
  * only the last block re-renders, and each new block fades in.
  */
 export function StreamingMarkdown({ text, streaming, animate = true }: { text: string; streaming: boolean; animate?: boolean }) {
-  const blocks = useMemo(
-    () => splitBlocks(normalizeDisplayMath(streaming ? repairMarkdown(text) : text)),
-    [text, streaming],
-  );
+  const blocks = useMemo(() => splitBlocks(normalizeDisplayMath(streaming ? repairMarkdown(text) : text)), [text, streaming]);
 
   return (
     <div className="answer" data-streaming={streaming ? "true" : undefined}>
       {blocks.map((block, i) => (
-        <MdBlock
-          key={i}
-          source={block}
-          streaming={streaming && i === blocks.length - 1}
-          animate={animate}
-        />
+        <MdBlock key={i} source={block} streaming={streaming && i === blocks.length - 1} animate={animate} />
       ))}
     </div>
   );

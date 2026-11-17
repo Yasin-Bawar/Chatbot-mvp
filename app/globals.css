@@ -1434,6 +1434,53 @@ svg .chalk-pop { transform-box: fill-box; transform-origin: center; }
 .visual-label-country { font-size: 13px; }
 .visual-label-marker { font-weight: 600; font-size: 12px; }
 .visual-label-route { font-weight: 600; font-size: 12px; color: #92400e; }
+.visual-label-river { font-weight: 600; font-size: 11.5px; color: #1d4ed8; background: rgba(239, 246, 255, 0.92); }
+.visual-label-organ { font-size: 13px; border-inline-start: 3px solid var(--accent); }
+.visual-label-tap { color: #fff; background: rgba(15, 23, 42, 0.86); }
+/* Body systems: one row of icons; the chosen one shows its name. */
+.body-systems {
+  position: absolute;
+  left: 50%;
+  bottom: 12px;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 2px;
+  max-width: calc(100% - 24px);
+  overflow-x: auto;
+  scrollbar-width: none;
+  border-radius: 16px;
+  padding: 4px;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.16);
+}
+.body-systems::-webkit-scrollbar { display: none; }
+.body-systems button {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 6px;
+  height: 38px;
+  min-width: 38px;
+  justify-content: center;
+  border-radius: 12px;
+  padding: 0 9px;
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+  color: var(--v-muted);
+}
+.body-systems button svg { width: 19px; height: 19px; flex: none; }
+.body-systems button[data-active="true"] { color: #fff; background: var(--accent); }
+.body-tools { top: 12px; bottom: auto; }
+.visual-credit {
+  position: absolute;
+  inset-inline-end: 12px;
+  top: 8px;
+  font-size: 10.5px;
+  color: var(--v-muted);
+  opacity: 0.75;
+  pointer-events: none;
+}
 .visual-label-atom {
   padding: 0 5px;
   font-size: 11px;

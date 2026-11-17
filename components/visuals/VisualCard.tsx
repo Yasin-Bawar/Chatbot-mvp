@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "motion/react";
-import { Atom, Earth, FlaskConical, LoaderCircle, Maximize2, Orbit, X } from "lucide-react";
+import { Atom, Earth, FlaskConical, LoaderCircle, Maximize2, Orbit, PersonStanding, X } from "lucide-react";
 import dynamic from "next/dynamic";
 import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
@@ -9,6 +9,7 @@ import { createPortal } from "react-dom";
 import { useOverlays } from "@/lib/overlays";
 import { findPreset, formulaOf } from "@/lib/visuals/molecules";
 import { parseVisual } from "@/lib/visuals/parse";
+import { CHEMISTRY_SIMS } from "@/lib/visuals/physics";
 import type { VisualKind, VisualSpec } from "@/lib/visuals/types";
 import { Markdown } from "@/components/markdown/Markdown";
 import { visualTheme } from "./theme";
@@ -23,6 +24,7 @@ const Loading = () => (
 const Globe = dynamic(() => import("./Globe"), { ssr: false, loading: Loading });
 const Molecule = dynamic(() => import("./Molecule"), { ssr: false, loading: Loading });
 const Sim = dynamic(() => import("./Sim"), { ssr: false, loading: Loading });
+const Body = dynamic(() => import("./Body"), { ssr: false, loading: Loading });
 
 function describe(spec: VisualSpec): { icon: React.ReactNode; note?: string; subtitle?: string } {
   if (spec.kind === "globe") return { icon: <Earth />, note: spec.note };
@@ -31,7 +33,8 @@ function describe(spec: VisualSpec): { icon: React.ReactNode; note?: string; sub
     const formula = spec.formula || preset?.formula || (spec.atoms.length ? formulaOf(spec.atoms) : "");
     return { icon: <Atom />, note: spec.note ?? preset?.note, subtitle: formula ? `$\\mathrm{${formula}}$` : undefined };
   }
-  return { icon: spec.type === "states" ? <FlaskConical /> : <Orbit />, note: spec.note };
+  if (spec.kind === "body") return { icon: <PersonStanding />, note: spec.note };
+  return { icon: CHEMISTRY_SIMS.includes(spec.type) ? <FlaskConical /> : <Orbit />, note: spec.note };
 }
 
 function titleOf(spec: VisualSpec): string {
@@ -40,7 +43,7 @@ function titleOf(spec: VisualSpec): string {
 }
 
 /**
- * A ```globe / ```molecule / ```sim block. In the chat it is a light card; the
+ * A ```globe / ```molecule / ```sim / ```body block. In the chat it is a light card; the
  * visual itself opens full screen (by itself once, for a new answer).
  */
 export function VisualCard({ lang, raw, streaming }: { lang: VisualKind; raw: string; streaming: boolean }) {
@@ -161,6 +164,8 @@ export function VisualCard({ lang, raw, streaming }: { lang: VisualKind; raw: st
                     <Globe spec={spec} />
                   ) : spec.kind === "molecule" ? (
                     <Molecule spec={spec} />
+                  ) : spec.kind === "body" ? (
+                    <Body spec={spec} />
                   ) : (
                     <Sim spec={spec} accent={theme.accent} />
                   )}

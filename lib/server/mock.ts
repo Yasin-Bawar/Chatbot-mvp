@@ -185,6 +185,128 @@ const STATES_ANSWER = `ماده سه حالت اصلی دارد: **جامد**، 
 
 const SIM_DEMOS: { test: RegExp; tool: string; book: string; page: number; text: string }[] = [
   {
+    test: /بدن|هاضمه|معده|جگر|اسکلیت|استخوان|عضلات|body|organ|digestive|skeleton/i,
+    tool: "سیستم هاضمه",
+    book: "بیولوژی صنف هشتم",
+    page: 36,
+    text: `غذا از **مری** به **معده** می‌رود؛ **جگر** صفرا می‌سازد که چربی را هضم می‌کند.
+
+\`\`\`body
+{"title": "سیستم هاضمه", "system": "digestive", "highlight": ["esophagus", "stomach", "liver", "small_intestine"], "note": "روی هر عضو بزنید تا نامش را ببینید."}
+\`\`\``,
+  },
+  {
+    test: /سقوط|مقاومت هوا|free ?fall|feather/i,
+    tool: "سقوط آزاد",
+    book: "فزیک صنف نهم",
+    page: 54,
+    text: `در **خلا** توپ و پَر با هم می‌افتند؛ این **هوا** است که پَر را آهسته می‌کند.
+
+\`\`\`sim
+{"type": "freefall", "title": "توپ و پَر", "params": {"height": 20, "air": 1}, "note": "هوا را بردارید و دوباره ببینید."}
+\`\`\`
+
+$$t = \\sqrt{\\frac{2h}{g}}$$`,
+  },
+  {
+    test: /فنر|نوسان|spring|hooke/i,
+    tool: "فنر و نوسان",
+    book: "فزیک صنف دهم",
+    page: 128,
+    text: `فنر **سخت‌تر** تندتر نوسان می‌کند و کتله **سنگین‌تر** آهسته‌تر.
+
+\`\`\`sim
+{"type": "spring", "title": "کتله و فنر", "params": {"k": 20, "mass": 1, "amplitude": 0.2}, "note": "کتله را چهار برابر کنید؛ دوره دو برابر می‌شود."}
+\`\`\`
+
+$$T = 2\\pi\\sqrt{\\frac{m}{k}}$$`,
+  },
+  {
+    test: /تصادم|مومنتم|momentum|collision/i,
+    tool: "تصادم و مومنتم",
+    book: "فزیک صنف دهم",
+    page: 76,
+    text: `در هر تصادم، **مومنتم مجموعی** قبل و بعد از تصادم یکسان است.
+
+\`\`\`sim
+{"type": "collision", "title": "تصادم دو گادی", "params": {"m1": 2, "m2": 2, "v1": 4, "elastic": 1}, "note": "کتله‌ها برابر اند: گادی اول می‌ایستد!"}
+\`\`\`
+
+$$m_1v_1 + m_2v_2 = m_1v_1' + m_2v_2'$$`,
+  },
+  {
+    test: /عدسیه|عدسی|lens/i,
+    tool: "عدسیه محدب",
+    book: "فزیک صنف یازدهم",
+    page: 141,
+    text: `اگر جسم از **محراق** دورتر باشد تصویر **حقیقی و چپه** است؛ نزدیک‌تر باشد، **مجازی و بزرگ**.
+
+\`\`\`sim
+{"type": "lens", "title": "تصویر در عدسیه محدب", "params": {"focal": 10, "object": 25}, "note": "جسم را از F نزدیک‌تر بیاورید."}
+\`\`\`
+
+$$\\frac{1}{f} = \\frac{1}{u} + \\frac{1}{v}$$`,
+  },
+  {
+    test: /انکسار|شکست نور|refraction|snell/i,
+    tool: "انکسار نور",
+    book: "فزیک صنف یازدهم",
+    page: 128,
+    text: `نور وقتی از **هوا به شیشه** می‌رود، به طرف **خط عمود** خم می‌شود.
+
+\`\`\`sim
+{"type": "refraction", "title": "انکسار نور", "params": {"angle": 40, "n1": 1, "n2": 1.5}, "note": "n1 و n2 را عوض کنید و زاویه را زیاد کنید."}
+\`\`\`
+
+$$n_1\\sin\\theta_1 = n_2\\sin\\theta_2$$`,
+  },
+  {
+    test: /ساختمان اتوم|الکترون|پروتون|نیوترون|bohr|atomic structure/i,
+    tool: "ساختمان اتوم",
+    book: "کیمیا صنف هشتم",
+    page: 21,
+    text: `اتوم یک **هسته** (پروتون و نیوترون) دارد و **الکترون‌ها** در لایه‌ها دور آن می‌چرخند.
+
+\`\`\`sim
+{"type": "atom", "title": "اتوم سودیم", "element": "Na", "note": "عدد اتومی را تغییر دهید و لایه‌ها را ببینید."}
+\`\`\``,
+  },
+  {
+    test: /تعامل|معادله کیمیاوی|متوازن|reaction|balance/i,
+    tool: "تعامل کیمیاوی",
+    book: "کیمیا صنف نهم",
+    page: 63,
+    text: `در تعامل کیمیاوی اتوم‌ها **از بین نمی‌روند**؛ فقط **جای‌شان عوض** می‌شود.
+
+\`\`\`sim
+{"type": "reaction", "title": "سوختن میتان", "equation": "CH4 + 2O2 -> CO2 + 2H2O", "note": "اتوم‌های هر طرف را بشمارید."}
+\`\`\``,
+  },
+  {
+    test: /تیزاب|قلوی|اسید|\bph\b|acid|alkali|indicator/i,
+    tool: "تیزاب و قلوی",
+    book: "کیمیا صنف دهم",
+    page: 88,
+    text: `pH کمتر از ۷ **تیزابی**، مساوی ۷ **خنثی** و بیشتر از ۷ **قلوی** است.
+
+\`\`\`sim
+{"type": "ph", "title": "سنجش pH", "params": {"ph": 3}, "note": "pH را به ۷ و ۱۲ ببرید و رنگ را ببینید."}
+\`\`\``,
+  },
+  {
+    test: /قانون گاز|فشار گاز|بویل|چارلس|boyle|charles|gas law/i,
+    tool: "قانون گازها",
+    book: "کیمیا صنف دهم",
+    page: 34,
+    text: `گاز را **گرم** کنید یا **حجمش را کم** کنید، فشارش **زیاد** می‌شود.
+
+\`\`\`sim
+{"type": "gas", "title": "گاز در سلندر", "params": {"temperature": 27, "volume": 1}, "note": "حجم را نصف کنید و فشار را ببینید."}
+\`\`\`
+
+$$\\frac{P_1V_1}{T_1} = \\frac{P_2V_2}{T_2}$$`,
+  },
+  {
     test: /رقاصک|pendulum|آونگ/i,
     tool: "رقاصک ساده",
     book: "فزیک صنف نهم",
@@ -246,14 +368,14 @@ function pickAnswer(question: string): { text: string; tool: string; source: { t
   if (/آزمون|امتحان|quiz|سوال تمرینی/i.test(question)) {
     return { text: QUIZ_ANSWER, tool: "سیستم هاضمه", source: { title: "بیولوژی صنف یازدهم", page: 42 } };
   }
+  const sim = SIM_DEMOS.find((d) => d.test.test(question));
+  if (sim) return { text: sim.text, tool: sim.tool, source: { title: sim.book, page: sim.page } };
   if (/جغرافی|همسایه|کشور|نقشه|کره زمین|قاره|راه ابریشم|geograph|country|globe|map/i.test(question)) {
     return { text: GLOBE_ANSWER, tool: "موقعیت جغرافیایی افغانستان", source: { title: "جغرافیه صنف هفتم", page: 12 } };
   }
   if (/مولکول|molecule|اتوم|پیوند|H2O/i.test(question)) {
     return { text: MOLECULE_ANSWER, tool: "ساختمان مولکول آب", source: { title: "کیمیا صنف نهم", page: 27 } };
   }
-  const sim = SIM_DEMOS.find((d) => d.test.test(question));
-  if (sim) return { text: sim.text, tool: sim.tool, source: { title: sim.book, page: sim.page } };
   if (/پرتاب|پرتابی|projectile|توپ/i.test(question)) {
     return { text: PROJECTILE_ANSWER, tool: "حرکت پرتابی", source: { title: "فزیک صنف دهم", page: 61 } };
   }

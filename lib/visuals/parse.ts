@@ -1,7 +1,9 @@
 import { parseLooseJson } from "@/lib/json-repair";
 import { normalizeElement } from "./molecules";
+import { ORGANS, resolveOrgan, resolveSystem, SYSTEMS } from "./anatomy";
+import { REACTIONS, elementZ, parseEquation } from "./chemistry";
 import { SIM_TITLES } from "./physics";
-import type { GlobeSpec, MoleculeSpec, SimSpec, SimType, VisualKind, VisualSpec } from "./types";
+import type { BodySpec, GlobeSpec, MoleculeSpec, SimSpec, SimType, VisualKind, VisualSpec } from "./types";
 
 /**
  * Parses the JSON inside a ```globe / ```molecule / ```sim block into a safe,
@@ -79,6 +81,8 @@ function parseGlobe(o: Raw): GlobeSpec {
     title: str(o.title) ?? "کره زمین",
     note: str(o.note, 600),
     focus: latLon(o.focus ?? o.center),
+    view: o.view === "map" ? "map" : "satellite",
+    rivers: o.rivers === true,
     zoom: zoom === null ? (markers.length || highlight.length ? 2 : 1) : Math.min(4, Math.max(1, zoom)),
     highlight,
     markers,
@@ -120,7 +124,23 @@ function parseMolecule(o: Raw): MoleculeSpec | null {
   };
 }
 
-const SIM_TYPES = new Set<SimType>(["projectile", "pendulum", "incline", "circuit", "wave", "states"]);
+const SIM_TYPES = new Set<SimType>([
+  "projectile",
+  "pendulum",
+  "incline",
+  "circuit",
+  "wave",
+  "states",
+  "freefall",
+  "spring",
+  "collision",
+  "lens",
+  "refraction",
+  "atom",
+  "reaction",
+  "ph",
+  "gas",
+]);
 const SIM_ALIASES: Record<string, SimType> = {
   projectile_motion: "projectile",
   throw: "projectile",
@@ -135,6 +155,31 @@ const SIM_ALIASES: Record<string, SimType> = {
   states_of_matter: "states",
   matter: "states",
   phases: "states",
+  free_fall: "freefall",
+  falling: "freefall",
+  drop: "freefall",
+  spring_mass: "spring",
+  shm: "spring",
+  oscillation: "spring",
+  hooke: "spring",
+  momentum: "collision",
+  collisions: "collision",
+  convex_lens: "lens",
+  optics: "lens",
+  snell: "refraction",
+  light_refraction: "refraction",
+  bohr: "atom",
+  atomic_structure: "atom",
+  element: "atom",
+  chemical_reaction: "reaction",
+  equation: "reaction",
+  acid_base: "ph",
+  acids: "ph",
+  ph_scale: "ph",
+  gas_law: "gas",
+  gas_laws: "gas",
+  boyle: "gas",
+  charles: "gas",
 };
 
 function parseSim(o: Raw): SimSpec | null {
@@ -157,7 +202,34 @@ function parseSim(o: Raw): SimSpec | null {
         ? { name: str(s?.name ?? o.substanceName, 40) ?? "ماده", melt, boil }
         : { name: "آب", melt: 0, boil: 100 };
   }
-  return { kind: "sim", type, title: str(o.title) ?? SIM_TITLES[type], note: str(o.note, 600), params, substance };
+  if (type === "atom" && params.z === undefined) {
+    const z = elementZ(str(o.element ?? o.symbol, 20) ?? num(o.atomicNumber) ?? undefined);
+    if (z) params.z = z;
+  }
+  let equation: string | undefined;
+  if (type === "reaction") {
+    const named = str(o.reaction ?? o.preset, 60);
+    const text = str(o.equation, 200) ?? (named ? (REACTIONS[named.toLowerCase()] ?? REACTIONS[named]) : undefined);
+    equation = text && parseEquation(text) ? text : REACTIONS.water;
+  }
+  return { kind: "sim", type, title: str(o.title) ?? SIM_TITLES[type], note: str(o.note, 600), params, substance, equation };
+}
+
+function parseBody(o: Raw): BodySpec {
+  const list = Array.isArray(o.highlight) ? o.highlight : typeof o.highlight === "string" ? [o.highlight] : [];
+  const highlight = [
+    ...new Set(
+      list.flatMap((h) => {
+        const name = typeof h === "string" ? h : isObj(h) ? str(h.name ?? h.organ, 60) : undefined;
+        return name ? resolveOrgan(name) : [];
+      }),
+    ),
+  ].slice(0, 8);
+  const named = str(o.system, 60);
+  // Without a system, show the system of the first organ pointed out.
+  const system = (named ? resolveSystem(named) : null) ?? (highlight.length ? ORGANS[highlight[0]].system : null);
+  const fallback = system ? SYSTEMS.find((s) => s.key === system)!.name : "بدن انسان";
+  return { kind: "body", title: str(o.title) ?? fallback, note: str(o.note, 600), system, highlight };
 }
 
 export function parseVisual(kind: VisualKind, source: string): VisualSpec | null {
@@ -165,5 +237,6 @@ export function parseVisual(kind: VisualKind, source: string): VisualSpec | null
   if (!isObj(o)) return null;
   if (kind === "globe") return parseGlobe(o);
   if (kind === "molecule") return parseMolecule(o);
+  if (kind === "body") return parseBody(o);
   return parseSim(o);
 }

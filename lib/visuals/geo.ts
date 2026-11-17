@@ -192,3 +192,54 @@ export function greatCircle(a: [number, number], b: [number, number], segments =
   }
   return out;
 }
+
+/** Inverse of latLonToVector: a point on (or near) the sphere back to latitude/longitude. */
+export function vectorToLatLon(x: number, y: number, z: number): { lat: number; lon: number } {
+  const r = Math.hypot(x, y, z) || 1;
+  return { lat: (Math.asin(Math.max(-1, Math.min(1, y / r))) * 180) / Math.PI, lon: (Math.atan2(x, z) * 180) / Math.PI };
+}
+
+type Ring = number[][];
+
+/** Even-odd test of a point against polygons given as [ [outer, hole…], … ] in [lon, lat]. */
+export function pointInPolygons(lon: number, lat: number, polygons: Ring[][]): boolean {
+  let inside = false;
+  for (const polygon of polygons) {
+    for (const ring of polygon) {
+      // Rings that cross the antimeridian are tested at both lon and lon ± 360.
+      for (const shift of [0, 360, -360]) {
+        const x = lon + shift;
+        let hit = false;
+        for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+          const [xi, yi] = ring[i];
+          const [xj, yj] = ring[j];
+          if (yi > lat !== yj > lat && x < ((xj - xi) * (lat - yi)) / (yj - yi) + xi) hit = !hit;
+        }
+        if (hit) {
+          inside = !inside;
+          break;
+        }
+      }
+    }
+  }
+  return inside;
+}
+
+/** Dari names for rivers in the Natural Earth data that students meet in school. */
+export const DARI_RIVER: Record<string, string> = {
+  "Amu Darya": "آمو دریا",
+  Panj: "دریای پنج",
+  Helmand: "دریای هلمند",
+  Harirud: "هریرود",
+  Indus: "دریای سند",
+  "Syr Darya": "سیر دریا",
+  Nile: "نیل",
+  Tigris: "دجله",
+  Euphrates: "فرات",
+  Ganges: "گنگا",
+  Volga: "ولگا",
+  Yangtze: "یانگتسی",
+  Amazon: "امازون",
+  Mississippi: "میسیسیپی",
+  Danube: "دانوب",
+};

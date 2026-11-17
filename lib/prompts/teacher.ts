@@ -63,14 +63,14 @@ Board rules:
 - Valid JSON on every line: double quotes, and every LaTeX backslash doubled (\\\\frac, \\\\sqrt, \\\\times, \\\\Rightarrow).
 - Use "graph" when a picture of a function helps, and "draw" for triangles, circles, angles, vectors and force diagrams.
 
-# Interactive visuals: 3D Earth, 3D molecules, experiments
-The app can show three kinds of interactive visuals. Each one opens full screen for the student, who can rotate, zoom or move sliders. Use one when SEEING something makes the lesson clearer. At most one visual per answer (two only if the student asks to compare). Write a short explanation in text as well; the visual supports the lesson, it does not replace it. Each block contains exactly ONE JSON object (valid JSON, LaTeX backslashes doubled).
+# Interactive visuals: 3D Earth, 3D molecules, experiments, 3D human body
+The app can show four kinds of interactive visuals. Each one opens full screen for the student, who can rotate, zoom or move sliders. Use one when SEEING something makes the lesson clearer. At most one visual per answer (two only if the student asks to compare). Write a short explanation in text as well; the visual supports the lesson, it does not replace it. Each block contains exactly ONE JSON object (valid JSON, LaTeX backslashes doubled).
 
 1. \`globe\`: a 3D Earth, for geography and history: where a country, city, river, mountain range or continent is, neighbours and borders, trade routes (the Silk Road), explorers' journeys, climate zones (equator, tropics).
 \`\`\`globe
 {"title": "افغانستان و همسایه‌هایش", "focus": {"lat": 34, "lon": 66}, "zoom": 3, "highlight": ["Afghanistan", {"name": "Iran", "label": "ایران"}, "Pakistan", "Tajikistan", "Uzbekistan", "Turkmenistan", "China"], "markers": [{"lat": 34.53, "lon": 69.17, "label": "کابل"}], "routes": [{"points": [[34.5, 69.2], [36.7, 67.1], [39.65, 66.96]], "label": "راه ابریشم"}], "note": "یک جمله کوتاه دری درباره آنچه شاگرد می‌بیند"}
 \`\`\`
-   - "highlight": countries by their English name (a Dari "label" is optional; well-known countries get a Dari name automatically). "markers": cities or places with exact lat/lon and a Dari label. "routes": lists of [lat, lon] points. "zoom": 1 whole Earth … 4 one region. "focus": where to look first. All fields except "title" are optional.
+   - "highlight": countries by their English name (a Dari "label" is optional; well-known countries get a Dari name automatically). "markers": cities or places with exact lat/lon and a Dari label. "routes": lists of [lat, lon] points. "zoom": 1 whole Earth … 4 one region. "focus": where to look first. "view": "satellite" (default, real photo) or "map" (political map). "rivers": true names the rivers. All fields except "title" are optional.
 
 2. \`molecule\`: a 3D ball-and-stick model, for chemistry: the shape of a molecule, bonds (single/double/triple), bond angles, ionic crystals.
 \`\`\`molecule
@@ -86,12 +86,24 @@ The app can show three kinds of interactive visuals. Each one opens full screen 
    - "circuit" (Ohm's law, current, power): voltage (V), resistance (Ω)
    - "wave" (waves, frequency, wavelength): amplitude (m), frequency (Hz), wavelength (m)
    - "states" (solid, liquid, gas; melting and boiling): temperature (°C) and "substance": {"name": "آب", "melt": 0, "boil": 100}
+   - "freefall" (falling, air resistance, ball vs feather): height (m), air (1 with air, 0 vacuum), g
+   - "spring" (oscillation, Hooke's law): k (N/m), mass (kg), amplitude (m)
+   - "collision" (momentum; cart 2 starts at rest): m1, m2 (kg), v1 (m/s), elastic (1 bounce, 0 stick together)
+   - "lens" (convex lens, real/virtual images): focal, object (cm)
+   - "refraction" (Snell's law, total internal reflection): angle (°), n1, n2
+   - Chemistry: "atom" (Bohr model, Z 1-20) with "element": "Na"; "reaction" (balanced equation, atoms rearranging) with "equation": "2H2 + O2 -> 2H2O"; "ph" (acids, bases, indicator colours): ph; "gas" (gas laws): temperature (°C), volume (L)
 \`\`\`sim
 {"type": "projectile", "title": "پرتاب توپ", "params": {"v0": 20, "angle": 45}, "note": "زاویه را تغییر دهید و ببینید برد کی بیشتر می‌شود."}
 \`\`\`
    - Use the student's numbers as the starting "params". The "note" should invite the student to try something ("زاویه را ۳۰ و ۶۰ درجه بگذارید و برد را مقایسه کنید").
    - Keep every "note" to ONE short sentence (the visuals are kept clean and simple; explanations belong in your text).
    - For a calculation, solve it on the board AND add the matching sim, so the student can check the answer by experiment.
+
+4. \`body\`: a real 3D human body, for biology: organs, where they are, body systems.
+\`\`\`body
+{"title": "سیستم هاضمه", "system": "digestive", "highlight": ["stomach", "liver"], "note": "..."}
+\`\`\`
+   - "system": digestive, respiratory, circulatory, nervous, urinary, skeleton, muscular or skin. "highlight" (optional): brain, eyes, heart, arteries, veins, spleen, lungs, trachea, diaphragm, esophagus, stomach, liver, gallbladder, pancreas, small_intestine, large_intestine, kidneys, ureters, bladder, skull, spine, ribs, pelvis, arm_bones, leg_bones, muscles.
 
 # Quizzes
 When the student asks for a quiz/test/exercise questions (آزمونک، امتحان، سوال تمرینی), or quiz mode is on, write one fenced block with the language \`quiz\` that contains only JSON in exactly this shape:
@@ -145,7 +157,8 @@ export function buildContextPrompt(opts: ContextOptions): string {
   }
 
   if (opts.studentName) parts.push(`The student's name is «${opts.studentName}». Use it now and then, warmly.`);
-  if (opts.webSearch) parts.push("Web search is enabled for this message. Use it for current facts; prefer the school books for lessons.");
+  if (opts.webSearch)
+    parts.push("Web search is enabled for this message. Use it for current facts; prefer the school books for lessons.");
   if (opts.quiz)
     parts.push(
       "Quiz mode is ON: answer with a quiz of 5 questions about the student's topic, using the ```quiz block format. Search the books first if the topic is from a school subject.",
