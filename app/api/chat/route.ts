@@ -3,7 +3,7 @@ import { z } from "zod";
 import { modelById } from "@/lib/models";
 import { buildContextPrompt, TEACHER_PERSONA } from "@/lib/prompts/teacher";
 import { REFUSAL_TEXT, friendlyError, getAnthropic, hasApiKey, isMockMode } from "@/lib/server/anthropic";
-import { assertBudget, recordUsage } from "@/lib/server/budget";
+import { recordUsage } from "@/lib/server/budget";
 import { listBooks, type Book } from "@/lib/server/books-repo";
 import { isDbConfigured } from "@/lib/server/db";
 import { runMockChat } from "@/lib/server/mock";
@@ -192,8 +192,6 @@ async function runChat(body: ChatRequestBody, send: (e: ChatStreamEvent) => void
   let jsonRetries = 0;
 
   for (let iteration = 0; iteration < MAX_ITERATIONS; iteration++) {
-    // Spending limit: every request (also each step of a tool loop) is checked.
-    await assertBudget();
     const stream = client.beta.messages.stream(
       {
         model: model.id,

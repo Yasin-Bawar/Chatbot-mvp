@@ -1,15 +1,16 @@
 import type Anthropic from "@anthropic-ai/sdk";
 import { OCR_SYSTEM, ocrUserPrompt, parseOcrOutput } from "@/lib/prompts/ocr";
 import { getAnthropic, hasApiKey, isMockMode } from "./anthropic";
-import { assertBudget, recordUsage } from "./budget";
+import { assertBookBudget, bookBudgetUsd, BudgetExceededError, recordUsage } from "./budget";
 
 /**
  * Reading book pages with Claude (scanned, broken or reversed pages) costs
- * credits, so it is OFF unless AI_BOOK_READING=1. When off, only the free text
+ * credits, so it is OFF unless AI_BOOK_READING=1 and the book budget is positive.
+ * When off, only the free text
  * inside the PDF is saved and those pages are skipped.
  */
 export function aiBookReadingEnabled(): boolean {
-  return process.env.AI_BOOK_READING === "1";
+  return process.env.AI_BOOK_READING === "1" && bookBudgetUsd() > 0;
 }
 
 /** Model that reads scanned pages (at most Claude Sonnet 4.6; OCR_MODEL can choose a cheaper one). */
@@ -30,11 +31,13 @@ export class NoApiKeyError extends Error {
  * so scanned and badly encoded pages work too.
  */
 export async function readPagesWithClaude(pdfBase64: string, pageNumbers: number[]): Promise<Map<number, string>> {
+  // Enforce this here too: queued workers and manual rereads share this entry point.
+  if (!aiBookReadingEnabled()) throw new BudgetExceededError();
   if (isMockMode()) {
     return new Map(pageNumbers.map((n) => [n, `## صفحه ${n}\n\n[متن نمونه: در حالت آزمایشی، هوش مصنوعی این صفحه را نخواند.]`]));
   }
   if (!hasApiKey()) throw new NoApiKeyError();
-  await assertBudget();
+  await assertBookBudget();
   const model = ocrModel();
 
   const content: Anthropic.Beta.BetaContentBlockParam[] = [

@@ -2,7 +2,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { z } from "zod";
 import { LIGHT_MODEL } from "@/lib/models";
 import { getAnthropic, hasApiKey, isMockMode } from "@/lib/server/anthropic";
-import { assertBudget, recordUsage } from "@/lib/server/budget";
+import { recordUsage } from "@/lib/server/budget";
 
 const BodySchema = z.object({
   user: z.string().max(4000),
@@ -24,7 +24,6 @@ export async function POST(req: Request) {
 
   try {
     // Titles always use the cheapest model.
-    await assertBudget();
     const response = await getAnthropic().messages.create({
       model: LIGHT_MODEL,
       max_tokens: 2000,
