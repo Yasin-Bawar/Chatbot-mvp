@@ -185,14 +185,27 @@ const STATES_ANSWER = `ماده سه حالت اصلی دارد: **جامد**، 
 
 const SIM_DEMOS: { test: RegExp; tool: string; book: string; page: number; text: string }[] = [
   {
+    test: /قلب|دوران خون|گردش خون|heart|circulat/i,
+    tool: "قلب و دوران خون",
+    book: "بیولوژی صنف هشتم",
+    page: 52,
+    text: `**قلب** خون را به **شش‌ها** و از آن‌جا به تمام بدن پمپ می‌کند؛ **شریان‌ها** خون را از قلب دور و **وریدها** به قلب برمی‌گردانند.
+
+\`\`\`anatomy
+{"title": "قلب و دوران خون", "system": "circulatory", "highlight": ["heart", "arteries", "veins"], "note": "دکمه تپش را بزنید و روی هر رگ ضربه بزنید."}
+\`\`\`
+
+سوال: چرا دیوار بطن چپ قلب ضخیم‌تر است؟`,
+  },
+  {
     test: /بدن|هاضمه|معده|جگر|اسکلیت|استخوان|عضلات|body|organ|digestive|skeleton/i,
     tool: "سیستم هاضمه",
     book: "بیولوژی صنف هشتم",
     page: 36,
     text: `غذا از **مری** به **معده** می‌رود؛ **جگر** صفرا می‌سازد که چربی را هضم می‌کند.
 
-\`\`\`body
-{"title": "سیستم هاضمه", "system": "digestive", "highlight": ["esophagus", "stomach", "liver", "small_intestine"], "note": "روی هر عضو بزنید تا نامش را ببینید."}
+\`\`\`anatomy
+{"title": "سیستم هاضمه", "system": "digestive", "highlight": ["esophagus", "stomach", "liver", "small_intestine"], "note": "روی هر عضو بزنید تا کارش را بخوانید."}
 \`\`\``,
   },
   {

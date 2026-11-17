@@ -3,10 +3,10 @@ import { normalizeElement } from "./molecules";
 import { ORGANS, resolveOrgan, resolveSystem, SYSTEMS } from "./anatomy";
 import { REACTIONS, elementZ, parseEquation } from "./chemistry";
 import { SIM_TITLES } from "./physics";
-import type { BodySpec, GlobeSpec, MoleculeSpec, SimSpec, SimType, VisualKind, VisualSpec } from "./types";
+import type { AnatomySpec, GlobeSpec, MoleculeSpec, SimSpec, SimType, VisualKind, VisualSpec } from "./types";
 
 /**
- * Parses the JSON inside a ```globe / ```molecule / ```sim block into a safe,
+ * Parses the JSON inside a ```globe / ```molecule / ```anatomy / ```sim block into a safe,
  * complete spec (defaults filled in, bad values dropped). Returns null when the
  * block cannot be used.
  */
@@ -215,8 +215,10 @@ function parseSim(o: Raw): SimSpec | null {
   return { kind: "sim", type, title: str(o.title) ?? SIM_TITLES[type], note: str(o.note, 600), params, substance, equation };
 }
 
-function parseBody(o: Raw): BodySpec {
-  const list = Array.isArray(o.highlight) ? o.highlight : typeof o.highlight === "string" ? [o.highlight] : [];
+function parseAnatomy(o: Raw): AnatomySpec {
+  // "highlight" (one or more organs) or "focus" (one organ).
+  const raw = o.highlight ?? o.focus;
+  const list = Array.isArray(raw) ? raw : typeof raw === "string" ? [raw] : [];
   const highlight = [
     ...new Set(
       list.flatMap((h) => {
@@ -229,7 +231,7 @@ function parseBody(o: Raw): BodySpec {
   // Without a system, show the system of the first organ pointed out.
   const system = (named ? resolveSystem(named) : null) ?? (highlight.length ? ORGANS[highlight[0]].system : null);
   const fallback = system ? SYSTEMS.find((s) => s.key === system)!.name : "بدن انسان";
-  return { kind: "body", title: str(o.title) ?? fallback, note: str(o.note, 600), system, highlight };
+  return { kind: "anatomy", title: str(o.title) ?? fallback, note: str(o.note, 600), system, highlight };
 }
 
 export function parseVisual(kind: VisualKind, source: string): VisualSpec | null {
@@ -237,6 +239,6 @@ export function parseVisual(kind: VisualKind, source: string): VisualSpec | null
   if (!isObj(o)) return null;
   if (kind === "globe") return parseGlobe(o);
   if (kind === "molecule") return parseMolecule(o);
-  if (kind === "body") return parseBody(o);
+  if (kind === "anatomy") return parseAnatomy(o);
   return parseSim(o);
 }

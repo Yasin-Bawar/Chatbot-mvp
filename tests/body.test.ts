@@ -24,8 +24,12 @@ describe("3D human body", () => {
     expect(statSync(GLB).size).toBeLessThan(5 * 1024 * 1024);
   });
 
-  it("every system has organs", () => {
+  it("every system has organs, and every organ an explanation and a question", () => {
     for (const s of SYSTEMS) expect(organsOf(s.key).length).toBeGreaterThan(0);
+    for (const o of Object.values(ORGANS)) {
+      expect(o.about.length).toBeGreaterThan(20);
+      expect(o.question.endsWith("؟")).toBe(true);
+    }
   });
 
   it("understands organ and system names in English and Dari", () => {
@@ -44,18 +48,27 @@ describe("3D human body", () => {
   });
 
   it("parses body blocks", () => {
-    expect(parseVisual("body", '{"system":"digestive","highlight":["stomach","Liver","nonsense"]}')).toEqual({
-      kind: "body",
+    expect(parseVisual("anatomy", '{"system":"digestive","highlight":["stomach","Liver","nonsense"]}')).toEqual({
+      kind: "anatomy",
       title: "سیستم هاضمه",
       note: undefined,
       system: "digestive",
       highlight: ["stomach", "liver"],
     });
     // The system follows from the first organ when it is not given.
-    expect(parseVisual("body", '{"title":"قلب","highlight":"heart"}')).toMatchObject({
+    expect(parseVisual("anatomy", '{"title":"قلب","highlight":"heart"}')).toMatchObject({
       system: "circulatory",
       highlight: ["heart"],
     });
-    expect(parseVisual("body", "{}")).toMatchObject({ title: "بدن انسان", system: null, highlight: [] });
+    expect(parseVisual("anatomy", "{}")).toMatchObject({ title: "بدن انسان", system: null, highlight: [] });
+    // The older format: one "focus" organ and "all" / "skeletal" systems.
+    expect(parseVisual("anatomy", '{"system":"all","focus":"heart"}')).toMatchObject({
+      system: "circulatory",
+      highlight: ["heart"],
+    });
+    expect(parseVisual("anatomy", '{"system":"skeletal","focus":"ribcage"}')).toMatchObject({
+      system: "skeleton",
+      highlight: ["ribs"],
+    });
   });
 });

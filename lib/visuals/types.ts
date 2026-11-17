@@ -2,7 +2,7 @@ import type { BodySystem } from "./anatomy";
 
 /**
  * Interactive visuals Homa can put in an answer, each as one JSON object in a
- * fenced block: ```globe, ```molecule, ```sim or ```body. They open full screen.
+ * fenced block: ```globe, ```molecule, ```sim or ```anatomy. They open full screen.
  */
 
 export type LatLon = { lat: number; lon: number };
@@ -73,8 +73,8 @@ export interface SimSpec {
   equation?: string;
 }
 
-export interface BodySpec {
-  kind: "body";
+export interface AnatomySpec {
+  kind: "anatomy";
   title: string;
   note?: string;
   /** Which body system to show (lib/visuals/anatomy.ts); null = the whole body. */
@@ -83,7 +83,7 @@ export interface BodySpec {
   highlight: string[];
 }
 
-export type VisualSpec = GlobeSpec | MoleculeSpec | SimSpec | BodySpec;
+export type VisualSpec = GlobeSpec | MoleculeSpec | SimSpec | AnatomySpec;
 export type VisualKind = VisualSpec["kind"];
 
-export const VISUAL_LANGS: readonly VisualKind[] = ["globe", "molecule", "sim", "body"];
+export const VISUAL_LANGS: readonly VisualKind[] = ["globe", "molecule", "sim", "anatomy"];

@@ -25,7 +25,7 @@ const BIOLOGY = { subject: "biology", label: "بیولوژی", accent: "#16a34a"
 export function visualTheme(spec: VisualSpec): VisualTheme {
   if (spec.kind === "globe") return { ...GEOGRAPHY, kind: "کره زمین", dark: true };
   if (spec.kind === "molecule") return { ...CHEMISTRY, kind: "مولکول", dark: false };
-  if (spec.kind === "body") return { ...BIOLOGY, kind: "بدن انسان", dark: false };
+  if (spec.kind === "anatomy") return { ...BIOLOGY, kind: "بدن انسان", dark: false };
   if (CHEMISTRY_SIMS.includes(spec.type)) return { ...CHEMISTRY, kind: "آزمایش", dark: false };
   return { ...PHYSICS, kind: "آزمایش", dark: false };
 }

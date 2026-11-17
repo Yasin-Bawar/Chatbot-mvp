@@ -74,8 +74,10 @@ const components: Components = {
     const text = hastText(code).replace(/\n$/, "");
     if (language === "quiz") return <QuizCard raw={text} streaming={streaming} />;
     if (language === "board") return <Board raw={text} streaming={streaming} />;
-    if ((VISUAL_LANGS as readonly string[]).includes(language)) {
-      return <VisualCard lang={language as VisualKind} raw={text} streaming={streaming} />;
+    // "body" is an older name for the 3D human body.
+    const visual = language === "body" ? "anatomy" : language;
+    if ((VISUAL_LANGS as readonly string[]).includes(visual)) {
+      return <VisualCard lang={visual as VisualKind} raw={text} streaming={streaming} />;
     }
     return (
       <CodeBlock language={language} code={text}>

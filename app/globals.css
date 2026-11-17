@@ -1472,6 +1472,31 @@ svg .chalk-pop { transform-box: fill-box; transform-origin: center; }
 .body-systems button svg { width: 19px; height: 19px; flex: none; }
 .body-systems button[data-active="true"] { color: #fff; background: var(--accent); }
 .body-tools { top: 12px; bottom: auto; }
+/* What a tapped organ does: a small card above the system buttons. */
+.body-info {
+  position: absolute;
+  inset-inline: 12px;
+  bottom: 64px;
+  margin-inline: auto;
+  max-width: 440px;
+  border-radius: 16px;
+  padding: 12px 16px 12px 40px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 4px 18px rgba(15, 23, 42, 0.14);
+  border-inline-start: 4px solid var(--accent);
+  font-size: 13.5px;
+  line-height: 1.9;
+  color: var(--v-ink);
+}
+.body-info b { display: block; font-size: 15.5px; }
+.body-info p { margin: 2px 0 0; }
+.body-info-question { color: var(--accent); font-weight: 600; }
+.body-info-question::before { content: "؟ "; }
+.body-info-close { position: absolute; top: 8px; left: 8px; display: grid; place-items: center; width: 28px; height: 28px; border-radius: 9px; color: var(--v-muted); }
+.body-info-close svg { width: 17px; height: 17px; }
+@media (max-width: 640px) {
+  .body-info { font-size: 13px; line-height: 1.8; padding: 10px 12px 10px 36px; }
+}
 .visual-credit {
   position: absolute;
   inset-inline-end: 12px;

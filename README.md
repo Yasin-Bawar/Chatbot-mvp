@@ -65,6 +65,22 @@
 - Live progress, resume for books with unread pages, a page-by-page text preview (with «خواندن دوباره این صفحه با هوش مصنوعی» to re-read one page), "ask about this book", and delete.
 - Search runs on Postgres with Farsi-aware normalization and stemming. Claude searches the books through the tools `search_books` and `read_book_pages` and cites pages.
 
+### Interactive human body for biology
+
+Homa can include an `anatomy` block in biology answers, opening the same full-screen viewer used by the globe. Students can rotate and zoom a bundled, schematic 3D body, switch between six body systems, tap 22 selectable organs/structures, read Dari explanations and understanding questions, and view the body from the front or back. Optional heartbeat/breathing animation, labels and a transparent body outline can be toggled. The model loads on demand without downloading external assets. Organ explanations remain accessible if WebGL is unavailable.
+
+Try: «بدن انسان را سه‌بعدی نشان بده و کار قلب را توضیح بده.»
+
+Supported systems: `all`, `respiratory`, `circulatory`, `digestive`, `nervous`, `skeletal`, `urinary`. Example response block:
+
+````markdown
+```anatomy
+{"title":"قلب و گردش خون","system":"circulatory","focus":"heart","note":"روی قلب و رگ‌ها بزنید."}
+```
+````
+
+The geometry is deliberately simplified for school lessons; it is not a medical anatomy atlas. Part IDs and explanations are in `lib/visuals/anatomy.ts`; the teacher's supported format is documented in `lib/prompts/teacher.ts`.
+
 ## How it works
 
 ```
@@ -77,7 +93,7 @@ POST /api/books/:id/start ──▶ /api/worker ─ after() ─▶ text layer (u
 chat input ──────────────────▶ POST /api/chat (NDJSON stream) ◀─────────────────────▶ teacher + book tools
 ```
 
-- `app/api/chat/route.ts` runs a streaming tool-use loop (`client.beta.messages.stream`) with adaptive thinking and prompt caching, then streams events to the browser. Before every request it checks the spending limit, and after it stores the estimated cost (`lib/server/budget.ts`, `lib/server/pricing.ts`).
+- `app/api/chat/route.ts` runs a streaming tool-use loop (`client.beta.messages.stream`) with adaptive thinking and prompt caching, then streams events to the browser. Chat and titles have no app-level spending cap; estimated costs are still recorded (`lib/server/budget.ts`, `lib/server/pricing.ts`). Only AI book reading checks a spending limit.
 - `lib/prompts/teacher.ts` holds the teacher persona and the formatting rules the UI relies on.
 - `lib/pdf/quality.ts` holds the page-quality heuristics; `lib/persian.ts` handles Farsi normalization and tokenization.
 - The board is a ```` ```board ```` block in Claude's answer with one JSON object per line (`title`, `step`, `math`, `text`, `graph`, `draw`, `answer`), so steps appear while the answer streams. `lib/board/parse.ts` parses it, tolerating LaTeX backslashes the model forgot to escape. `lib/board/expr.ts` is a small safe expression compiler for graphs (no `eval`), and `components/board/` renders the chalkboard.
@@ -125,15 +141,15 @@ The chat and worker routes can run for up to 300 seconds, the Hobby plan limit. 
 
 Optional variables:
 - `VERCEL_AUTOMATION_BYPASS_SECRET` lets the worker call itself on preview deployments that have Vercel Authentication on.
-- `AI_BOOK_READING=1` lets Claude read scanned or broken book pages. It is **off by default** to save credits: then only the free text inside the PDF is saved and scanned pages are skipped (the book card says how many).
-- `AI_BUDGET_USD` is the spending limit for all AI use, in US dollars (default `10`, `0` turns it off).
+- `AI_BOOK_READING=1` permits Claude to read scanned or broken book pages only when `AI_BOOK_BUDGET_USD` is also positive and has remaining allowance. Otherwise only free text inside the PDF is saved and scanned pages are skipped (the book card says how many).
+- `AI_BOOK_BUDGET_USD` is the cumulative spending cap for **books only**, in US dollars (default `0` = paid book reading paused). Missing, negative or invalid values also pause it. Existing book spending counts toward the cap; chat and title spending does not. The old `AI_BUDGET_USD` setting is ignored.
 - `OCR_MODEL` sets the model that reads scanned pages (default `claude-sonnet-4-6`).
 - `WORKER_BUDGET_MS` sets the length of one worker run (default 200000).
 
 ## Costs and notes
 
 - **Models:** the most capable model the app uses is **Claude Sonnet 4.6** (`claude-sonnet-4-6`, $3 / $15 per million input / output tokens), the default for chat and book reading. Students can switch to **Claude Haiku 5.5** (`claude-haiku-5-5`, $0.10 / $0.50) in the model picker; chat titles always use Haiku 5.5. The server accepts no other model.
-- **Spending limit (default $10):** the app estimates the cost of every response from its token usage and stores it in the `ai_usage` table. When the total reaches `AI_BUDGET_USD`, new questions get «بودجه هوش مصنوعی این برنامه تمام شده است…» and book reading stops sending pages to Claude (free text extraction continues). Open `/api/usage` to see what has been spent. The estimate can be a little off, and a request that is already running may finish over the limit, so also set a **monthly spend limit in the Anthropic Console** (Settings → Limits), which the API itself enforces.
+- **Books paused; chat uncapped:** `AI_BOOK_BUDGET_USD` defaults to `$0`, so background book reading, forced AI reading and manual page rereads cannot spend Claude credits, even if `AI_BOOK_READING=1` was already set. Existing saved books remain usable in chat, and free PDF text extraction continues. Chat and titles use the available Anthropic API balance without an app-level cap. Usage history is preserved; no database reset is needed. `/api/usage` reports total spending with `budgetUsd: null` and `remainingUsd: null`, plus a separate `books` object with its cap, spending and remaining allowance. To resume paid book reading later, set `AI_BOOK_READING=1` and a positive `AI_BOOK_BUDGET_USD` above the accumulated book spending, then redeploy. For a positive cap, estimates and in-flight requests can exceed it slightly; Anthropic's own account limits still apply.
 - Rough costs on Sonnet 4.6: a chat answer is about 1–5 US cents (more with web search or long book quotes); a scanned page read by AI is about 1–2 cents. Pages that extract cleanly cost nothing. `OCR_MODEL=claude-haiku-5-5` makes book reading much cheaper.
 - Book reading continues on the server after the page is closed. Keep the page open only until the upload bar finishes. If some pages could not be read (for example, the API was busy), «ادامه پردازش» on the book card tries them again.
 - Anyone who can open the site can upload and delete books. Add authentication before a public launch.

@@ -8,6 +8,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 process.env.PGLITE_DIR = "memory";
 process.env.MOCK_AI = "1";
 process.env.AI_BOOK_READING = "1";
+process.env.AI_BOOK_BUDGET_USD = "25";
 let uploadDir = "";
 
 const repo = await import("@/lib/server/books-repo");
@@ -140,5 +141,20 @@ describe("background book worker", () => {
     expect(after.phase).toBe("error");
     expect(after.error).toBeTruthy();
     expect(await repo.hasWaitingWork(2)).toBe(false);
+  });
+
+  it("a zero book cap blocks queued AI reading even with AI_BOOK_READING=1", async () => {
+    process.env.AI_BOOK_BUDGET_USD = "0";
+    try {
+      const id = await addBook(["text", "blank"], { forceAi: true });
+      await drain();
+      const book = (await repo.getBook(id))!;
+      expect(book.aiDone).toBe(0);
+      expect(book.pagesDone).toBe(1);
+      expect(book.failedPages).toBe(1);
+      expect(await repo.hasWaitingWork(2)).toBe(false);
+    } finally {
+      process.env.AI_BOOK_BUDGET_USD = "25";
+    }
   });
 });

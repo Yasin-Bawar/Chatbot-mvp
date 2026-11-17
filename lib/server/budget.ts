@@ -2,10 +2,10 @@ import { getDb, isDbConfigured } from "./db";
 import { costUsd, type BilledUsage } from "./pricing";
 
 /**
- * A spending limit for all Claude API use (chat, chat titles, reading books).
- * Every response's cost is estimated from its token usage and stored in the
- * `ai_usage` table; once the total reaches the budget, new requests are refused
- * with a friendly message. Set AI_BUDGET_USD (default 10; "0" turns it off).
+ * Track all Claude usage, but limit only AI book reading. Chat and titles have
+ * no app-level cap. AI_BOOK_BUDGET_USD is a cumulative book-only allowance;
+ * its default of 0 pauses paid book reading, including existing deployments.
+ * The old shared AI_BUDGET_USD setting is intentionally ignored.
  *
  * This is a safety net inside the app. Also set a spend limit in the Anthropic
  * Console, which the API itself enforces.
@@ -15,36 +15,37 @@ export type UsageKind = "chat" | "title" | "book";
 
 export class BudgetExceededError extends Error {
   constructor() {
-    super("بودجه هوش مصنوعی این برنامه تمام شده است. لطفاً به مسئول برنامه اطلاع دهید.");
+    super("خواندن کتاب با هوش مصنوعی متوقف است؛ بودجه کتاب‌ها تمام شده یا تعیین نشده است. گفتگو همچنان فعال است.");
     this.name = "BudgetExceededError";
   }
 }
 
-/** The budget in US dollars, or null when there is no limit. */
-export function budgetUsd(): number | null {
-  const raw = process.env.AI_BUDGET_USD?.trim();
-  if (raw === undefined || raw === "") return 10;
-  const value = Number(raw);
-  return Number.isFinite(value) && value > 0 ? value : null;
+/** Zero (also missing/invalid configuration) pauses paid book reading. */
+export function bookBudgetUsd(): number {
+  const value = Number(process.env.AI_BOOK_BUDGET_USD?.trim());
+  return Number.isFinite(value) && value > 0 ? value : 0;
 }
 
-export async function spentUsd(): Promise<number> {
+export async function spentUsd(kind?: UsageKind): Promise<number> {
   const db = await getDb();
-  const rows = await db.query<{ spent: number | string | null }>(`SELECT COALESCE(SUM(cost_usd), 0) AS spent FROM ai_usage`);
+  const rows = await db.query<{ spent: number | string | null }>(
+    `SELECT COALESCE(SUM(cost_usd), 0) AS spent FROM ai_usage${kind ? " WHERE kind = $1" : ""}`,
+    kind ? [kind] : [],
+  );
   return Number(rows[0]?.spent ?? 0);
 }
 
-/** Throws BudgetExceededError when the budget is used up. Call before each API request. */
-export async function assertBudget(): Promise<void> {
-  const budget = budgetUsd();
-  if (budget === null || !isDbConfigured()) return;
+/** Call before every paid book request; never allow unmetered book reading. */
+export async function assertBookBudget(): Promise<void> {
+  const budget = bookBudgetUsd();
+  if (budget === 0 || !isDbConfigured()) throw new BudgetExceededError();
   let spent: number;
   try {
-    spent = await spentUsd();
+    spent = await spentUsd("book");
   } catch (err) {
-    // The database is down: don't block teaching because of the meter itself.
+    // If spending cannot be checked, pause books. Chat has no budget check.
     console.error("[budget] could not read spending", err);
-    return;
+    throw new BudgetExceededError();
   }
   if (spent >= budget) throw new BudgetExceededError();
 }
@@ -81,11 +82,17 @@ export async function usageSummary() {
   );
   const byKind = rows.map((r) => ({ kind: r.kind, requests: Number(r.requests), costUsd: round(Number(r.cost)) }));
   const spent = byKind.reduce((sum, r) => sum + r.costUsd, 0);
-  const budget = budgetUsd();
+  const budget = bookBudgetUsd();
+  const bookSpent = byKind.find((r) => r.kind === "book")?.costUsd ?? 0;
   return {
-    budgetUsd: budget,
+    budgetUsd: null,
     spentUsd: round(spent),
-    remainingUsd: budget === null ? null : round(Math.max(0, budget - spent)),
+    remainingUsd: null,
+    books: {
+      budgetUsd: budget,
+      spentUsd: bookSpent,
+      remainingUsd: round(Math.max(0, budget - bookSpent)),
+    },
     byKind,
   };
 }

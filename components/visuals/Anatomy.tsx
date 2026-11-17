@@ -1,15 +1,35 @@
 "use client";
 
-import { BicepsFlexed, Bone, Brain, Droplets, Hand, HeartPulse, Pause, PersonStanding, Play, Utensils, Wind } from "lucide-react";
+import {
+  Activity,
+  BicepsFlexed,
+  Bone,
+  Brain,
+  Droplets,
+  Hand,
+  HeartPulse,
+  Pause,
+  PersonStanding,
+  Play,
+  Utensils,
+  Wind,
+  X,
+} from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 import { MeshoptDecoder } from "three/addons/libs/meshopt_decoder.module.js";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { ORGANS, organsOf, SYSTEMS, type BodySystem } from "@/lib/visuals/anatomy";
-import type { BodySpec } from "@/lib/visuals/types";
+import type { AnatomySpec } from "@/lib/visuals/types";
 import { toFaDigits } from "@/lib/persian";
 import { createStage, easeInOut, NoWebGLError, type Label, type Stage } from "./stage";
 import { VisualError } from "./VisualError";
+
+/**
+ * A real 3D human body (BodyParts3D, built by scripts/build-body-model.mjs):
+ * switch body systems, see the organs Homa points out, tap any organ to read
+ * what it does.
+ */
 
 const MODEL_URL = "/models/human-body.glb";
 
@@ -24,6 +44,9 @@ const ICONS: Record<BodySystem | "all", React.ReactNode> = {
   muscular: <BicepsFlexed />,
   skin: <Hand />,
 };
+
+/** Parts that move when "alive" is on (heartbeat, breathing). */
+const MOVING = ["heart", "lungs", "diaphragm"];
 
 interface Part {
   key: string;
@@ -90,12 +113,18 @@ function lookOf(key: string, system: BodySystem | null, highlight: string[]): Lo
   return { visible: false, opacity: 0 };
 }
 
-export default function Body({ spec }: { spec: BodySpec }) {
+type Mesh = THREE.Mesh<THREE.BufferGeometry, THREE.MeshStandardMaterial>;
+
+export default function Anatomy({ spec }: { spec: AnatomySpec }) {
   const mountRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<Stage | null>(null);
   const applyRef = useRef<(system: BodySystem | null, fly: boolean) => void>(() => {});
+  const aliveRef = useRef(false);
+  const selectedRef = useRef<string | null>(spec.highlight[0] ?? null);
   const [system, setSystem] = useState<BodySystem | null>(spec.system);
+  const [selected, setSelected] = useState<string | null>(spec.highlight[0] ?? null);
   const [spinning, setSpinning] = useState(false);
+  const [alive, setAlive] = useState(false);
   const [status, setStatus] = useState<"loading" | "ready" | "nowebgl" | "error">("loading");
   const [progress, setProgress] = useState(0);
 
@@ -129,12 +158,15 @@ export default function Body({ spec }: { spec: BodySpec }) {
     key.position.set(0.6, 1, 1);
     camera.add(key);
 
-    const meshes = new Map<string, THREE.Mesh<THREE.BufferGeometry, THREE.MeshStandardMaterial>>();
+    const meshes = new Map<string, Mesh>();
+    // Heart, lungs and diaphragm sit in a pivot at their own centre, so they can beat and breathe.
+    const pivots = new Map<string, THREE.Group>();
     const labels: Label[] = [];
     let tapLabel: Label | null = null;
     let tapUntil = 0;
     let flight: { from: THREE.Vector3; to: THREE.Vector3; fromT: THREE.Vector3; toT: THREE.Vector3; start: number } | null = null;
     let time = 0;
+    let beat = 0;
 
     /** Front-surface point of a part, where its name goes. */
     const anchorOf = (k: string) => {
@@ -197,16 +229,22 @@ export default function Body({ spec }: { spec: BodySpec }) {
         controls.target.lerpVectors(flight.fromT, flight.toT, e);
         if (t >= 1) flight = null;
       }
-      // Organs pointed out glow softly.
+      // Heartbeat (about 72 a minute) and slow breathing.
+      if (aliveRef.current) beat += dt;
+      const pulse = aliveRef.current ? Math.pow(Math.max(0, Math.sin(beat * Math.PI * 2 * 1.2)), 6) : 0;
+      const breath = aliveRef.current ? Math.sin(beat * Math.PI * 0.45) : 0;
+      pivots.get("heart")?.scale.setScalar(1 + 0.06 * pulse);
+      pivots.get("lungs")?.scale.set(1 + 0.03 * breath, 1 + 0.02 * breath, 1 + 0.04 * breath);
+      pivots.get("diaphragm")?.position.setY((pivots.get("diaphragm")!.userData.y as number) - 0.012 * breath);
+      // The organs pointed out, and the one tapped, glow softly.
       const glow = 0.12 + 0.1 * Math.sin(time * 3);
-      for (const k of spec.highlight) {
-        const mesh = meshes.get(k);
-        if (mesh) mesh.material.emissiveIntensity = glow;
+      for (const [k, mesh] of meshes) {
+        mesh.material.emissiveIntensity = k === selectedRef.current ? 0.32 : spec.highlight.includes(k) ? glow : 0;
       }
       if (tapLabel && time > tapUntil) tapLabel.visible = false;
     });
 
-    // Tap (not drag) on a part to see its name.
+    // Tap (not drag) on a part to see its name and what it does.
     const raycaster = new THREE.Raycaster();
     let down: { x: number; y: number } | null = null;
     const onDown = (e: PointerEvent) => {
@@ -231,6 +269,8 @@ export default function Body({ spec }: { spec: BodySpec }) {
       tapLabel.position.copy(hit.point);
       tapLabel.visible = true;
       tapUntil = time + 2.5;
+      selectedRef.current = hit.object.name;
+      setSelected(hit.object.name);
     };
     renderer.domElement.addEventListener("pointerdown", onDown);
     renderer.domElement.addEventListener("pointerup", onUp);
@@ -250,7 +290,18 @@ export default function Body({ spec }: { spec: BodySpec }) {
           const mesh = new THREE.Mesh(part.geometry, material);
           mesh.name = part.key;
           meshes.set(part.key, mesh);
-          scene.add(mesh);
+          if (MOVING.includes(part.key)) {
+            const centre = part.geometry.boundingBox!.getCenter(new THREE.Vector3());
+            const pivot = new THREE.Group();
+            pivot.position.copy(centre);
+            pivot.userData.y = centre.y;
+            mesh.position.copy(centre).multiplyScalar(-1);
+            pivot.add(mesh);
+            pivots.set(part.key, pivot);
+            scene.add(pivot);
+          } else {
+            scene.add(mesh);
+          }
         }
         apply(spec.system, true);
         // Start from the end of the flight, not mid-air.
@@ -279,16 +330,24 @@ export default function Body({ spec }: { spec: BodySpec }) {
   useEffect(() => {
     if (stageRef.current) stageRef.current.controls.autoRotate = spinning;
   }, [spinning]);
+  useEffect(() => {
+    aliveRef.current = alive;
+  }, [alive]);
 
   const choose = (next: BodySystem | null) => {
     setSystem(next);
     applyRef.current(next, true);
+  };
+  const closeInfo = () => {
+    selectedRef.current = null;
+    setSelected(null);
   };
 
   if (status === "nowebgl") return <VisualError kind="nowebgl" />;
   if (status === "error") return <VisualError kind="error" />;
 
   const active = SYSTEMS.find((s) => s.key === system);
+  const organ = selected ? ORGANS[selected] : null;
 
   return (
     <div className="relative h-full w-full bg-[#eef1f5]">
@@ -299,6 +358,18 @@ export default function Body({ spec }: { spec: BodySpec }) {
       <div className="visual-credit" dir="ltr">
         BodyParts3D © DBCLS · CC BY 4.0
       </div>
+
+      {organ && status === "ready" && (
+        <div className="body-info" role="status">
+          <button type="button" onClick={closeInfo} className="body-info-close" aria-label="بستن">
+            <X />
+          </button>
+          <b>{organ.name}</b>
+          <p>{organ.about}</p>
+          <p className="body-info-question">{organ.question}</p>
+        </div>
+      )}
+
       <div className="body-systems" role="group" aria-label="سیستم‌های بدن">
         <button
           type="button"
@@ -335,6 +406,17 @@ export default function Body({ spec }: { spec: BodySpec }) {
           aria-label={spinning ? "توقف چرخش" : "چرخش"}
         >
           {spinning ? <Pause /> : <Play />}
+        </button>
+        <button
+          type="button"
+          onClick={() => setAlive((x) => !x)}
+          className="visual-icon-btn"
+          data-active={alive ? "true" : undefined}
+          aria-pressed={alive}
+          aria-label="تپش قلب و تنفس"
+          title="تپش قلب و تنفس"
+        >
+          <Activity />
         </button>
       </div>
     </div>

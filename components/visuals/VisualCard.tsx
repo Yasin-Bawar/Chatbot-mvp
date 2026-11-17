@@ -24,7 +24,7 @@ const Loading = () => (
 const Globe = dynamic(() => import("./Globe"), { ssr: false, loading: Loading });
 const Molecule = dynamic(() => import("./Molecule"), { ssr: false, loading: Loading });
 const Sim = dynamic(() => import("./Sim"), { ssr: false, loading: Loading });
-const Body = dynamic(() => import("./Body"), { ssr: false, loading: Loading });
+const Anatomy = dynamic(() => import("./Anatomy"), { ssr: false, loading: Loading });
 
 function describe(spec: VisualSpec): { icon: React.ReactNode; note?: string; subtitle?: string } {
   if (spec.kind === "globe") return { icon: <Earth />, note: spec.note };
@@ -33,7 +33,7 @@ function describe(spec: VisualSpec): { icon: React.ReactNode; note?: string; sub
     const formula = spec.formula || preset?.formula || (spec.atoms.length ? formulaOf(spec.atoms) : "");
     return { icon: <Atom />, note: spec.note ?? preset?.note, subtitle: formula ? `$\\mathrm{${formula}}$` : undefined };
   }
-  if (spec.kind === "body") return { icon: <PersonStanding />, note: spec.note };
+  if (spec.kind === "anatomy") return { icon: <PersonStanding />, note: spec.note };
   return { icon: CHEMISTRY_SIMS.includes(spec.type) ? <FlaskConical /> : <Orbit />, note: spec.note };
 }
 
@@ -43,7 +43,7 @@ function titleOf(spec: VisualSpec): string {
 }
 
 /**
- * A ```globe / ```molecule / ```sim / ```body block. In the chat it is a light card; the
+ * A ```globe / ```molecule / ```sim / ```anatomy block. In the chat it is a light card; the
  * visual itself opens full screen (by itself once, for a new answer).
  */
 export function VisualCard({ lang, raw, streaming }: { lang: VisualKind; raw: string; streaming: boolean }) {
@@ -164,8 +164,8 @@ export function VisualCard({ lang, raw, streaming }: { lang: VisualKind; raw: st
                     <Globe spec={spec} />
                   ) : spec.kind === "molecule" ? (
                     <Molecule spec={spec} />
-                  ) : spec.kind === "body" ? (
-                    <Body spec={spec} />
+                  ) : spec.kind === "anatomy" ? (
+                    <Anatomy spec={spec} />
                   ) : (
                     <Sim spec={spec} accent={theme.accent} />
                   )}
