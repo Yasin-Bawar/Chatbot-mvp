@@ -23,6 +23,9 @@ const MODEL_URL = "/models/human-body.glb";
 /** Where on a part its name sits, as a share of its height (default: the middle). */
 const LABEL_HEIGHT: Record<string, number> = { arteries: 0.32, veins: 0.75, ribs: 0.7, spine: 0.4 };
 
+/** Shorts the model wears for school use (made by scripts/build-body-model.mjs; not an organ). */
+const CLOTHES = "clothes";
+
 /** Parts that move when "alive" is on (heartbeat, breathing). */
 const MOVING = ["heart", "lungs", "diaphragm"];
 
@@ -45,7 +48,7 @@ function loadModel(onProgress: (fraction: number) => void): Promise<Part[]> {
         gltf.scene.updateMatrixWorld(true);
         gltf.scene.traverse((obj) => {
           const mesh = obj as THREE.Mesh;
-          if (!mesh.isMesh || !ORGANS[mesh.name]) return;
+          if (!mesh.isMesh || !(ORGANS[mesh.name] || mesh.name === CLOTHES)) return;
           const geometry = mesh.geometry;
           // Positions arrive as compact integers plus a node scale; turn them into plain metres.
           const pos = geometry.getAttribute("position");
@@ -80,8 +83,10 @@ type Look = { visible: boolean; opacity: number };
 
 /** How each part looks for the chosen system and the organs pointed out. */
 function lookOf(key: string, system: BodySystem | null, highlight: string[]): Look {
+  // The shorts go with the skin: solid in the skin view, see-through elsewhere.
+  if (key === "skin" || key === CLOTHES)
+    return { visible: true, opacity: system === "skin" ? 1 : system === "muscular" ? 0.07 : 0.13 };
   const own = ORGANS[key].system;
-  if (key === "skin") return { visible: true, opacity: system === "skin" ? 1 : system === "muscular" ? 0.07 : 0.13 };
   if (own === "muscular") return { visible: system === "muscular", opacity: 1 };
   if (system === null) return { visible: true, opacity: highlight.length && !highlight.includes(key) ? 0.45 : 1 };
   if (system === "skin" || system === "muscular") return { visible: false, opacity: 0 };
@@ -176,7 +181,7 @@ export default function Anatomy({ spec }: { spec: AnatomySpec }) {
         m.opacity = look.opacity;
         m.transparent = look.opacity < 1;
         m.depthWrite = look.opacity >= 1;
-        mesh.renderOrder = k === "skin" ? 3 : look.opacity < 1 ? 2 : 0;
+        mesh.renderOrder = k === "skin" || k === CLOTHES ? 3 : look.opacity < 1 ? 2 : 0;
         m.needsUpdate = true;
       }
       // Names: the organs pointed out, or every organ of a small system.
@@ -252,7 +257,7 @@ export default function Anatomy({ spec }: { spec: AnatomySpec }) {
         -((e.clientY - rect.top) / rect.height) * 2 + 1,
       );
       raycaster.setFromCamera(pointer, camera);
-      const targets = [...meshes.values()].filter((m) => m.visible && m.material.opacity >= 0.3);
+      const targets = [...meshes.values()].filter((m) => m.name !== CLOTHES && m.visible && m.material.opacity >= 0.3);
       const hit = raycaster.intersectObjects(targets, false)[0];
       if (!hit) return;
       const name = ORGANS[hit.object.name].name;
@@ -274,7 +279,7 @@ export default function Anatomy({ spec }: { spec: AnatomySpec }) {
         for (const part of parts) {
           const material = new THREE.MeshStandardMaterial({
             color: part.color,
-            roughness: part.key === "skin" ? 0.6 : 0.55,
+            roughness: part.key === "skin" ? 0.6 : part.key === CLOTHES ? 0.85 : 0.55,
             metalness: 0,
             emissive: part.color,
             emissiveIntensity: 0,

@@ -89,6 +89,7 @@ Try: «بدن انسان را سه‌بعدی نشان بده و کار قلب �
 - Systems: `digestive`, `respiratory`, `circulatory`, `nervous`, `urinary`, `skeleton`, `muscular`, `skin` (leave it out for the whole body). Organ keys, Dari names, explanations and questions are in `lib/visuals/anatomy.ts`. Older blocks with `"focus"`, `"all"` or `"skeletal"` still work.
 - The model is one 1.6 MB file (`public/models/human-body.glb`), downloaded only when a body visual is opened and then reused. It is made by `scripts/build-body-model.mjs`, which merges about 870 BodyParts3D parts into 27 meshes, simplifies them to about 480,000 triangles and compresses them (meshopt).
 - It shows organs, bones, muscles and the main blood vessels, not cells, alveoli or nerves; vessel colours are symbolic.
+- Made for school: the body wears plain shorts. The build script removes the skin between the waist and the thighs (so genital anatomy is not in the file at all), puts a smooth garment there instead, and leaves out the pelvic-floor muscles.
 
 ## How it works
 
