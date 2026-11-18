@@ -9,6 +9,10 @@
  * Every organ group becomes one mesh named by its key (lib/visuals/anatomy.ts),
  * simplified with meshoptimizer, quantized and meshopt-compressed. Normals are
  * left out (the viewer computes them) to keep the file small.
+ *
+ * For school use the body wears shorts ("clothes" mesh): the skin between the
+ * waist and the upper thighs is removed and replaced by a smooth garment, so the
+ * genitals are not in the file at all, and pelvic-floor muscles are left out.
  */
 import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync, statSync } from "node:fs";
@@ -82,11 +86,18 @@ const available = new Set(
     .map((f) => path.basename(f, ".stl")),
 );
 
+// Parts left out of a school model (pelvic floor and around the genitals).
+const EXCLUDE =
+  /anal sphincter|coccygeus|levator ani|puborectalis|bulbospongiosus|ischiocavernosus|perine|cremaster|penis|scrot|testi/i;
+
 /** "FMA7161:artery" = the parts of FMA7161 whose English name contains "artery". */
 function expand(source) {
   const [id, filter] = source.split(":");
   const parts = composite.has(id) ? [...composite.get(id)] : [id];
-  return parts.filter((p) => available.has(p) && (!filter || (names.get(p) ?? "").toLowerCase().includes(filter)));
+  return parts.filter((p) => {
+    const name = names.get(p) ?? "";
+    return available.has(p) && !EXCLUDE.test(name) && (!filter || name.toLowerCase().includes(filter));
+  });
 }
 
 const taken = new Set();
@@ -144,10 +155,125 @@ function compact(positions, indices) {
   return { positions: new Float32Array(out), indices: idx };
 }
 
+/*
+ * Shorts, in BodyParts3D millimetres (x across, -y front, z up). Between the
+ * hems, only skin with |x| < MAX_X counts: that leaves out the hands, which hang
+ * beside the hips with a clear 180-200 mm gap.
+ */
+const SHORTS = { bottom: 605, crotch: 700, top: 935, step: 8, maxX: 185, margin: 5, sectors: 48 };
+
+/** A smooth garment around the skin between the upper thighs and the waist. */
+function makeShorts(positions) {
+  const { bottom, crotch, top, step, maxX, margin, sectors } = SHORTS;
+  const rings = (from, to) => {
+    const out = [];
+    for (let z = from; z <= to + 0.01; z += step) out.push(z);
+    return out;
+  };
+  // Two leg tubes below the crotch (reaching a little up inside the hips), one blob above.
+  const tubes = [
+    { zs: rings(bottom, crotch + 24), side: -1 },
+    { zs: rings(bottom, crotch + 24), side: 1 },
+    { zs: rings(crotch - 4, top), side: 0, cap: true },
+  ];
+  const out = { positions: [], indices: [] };
+  for (const tube of tubes) {
+    const radii = [];
+    const centres = [];
+    for (const z of tube.zs) {
+      const pts = [];
+      for (let i = 0; i < positions.length; i += 3) {
+        const x = positions[i];
+        const pz = positions[i + 2];
+        if (Math.abs(pz - z) > step * 0.75 || Math.abs(x) >= maxX) continue;
+        if (tube.side < 0 && x >= 0) continue;
+        if (tube.side > 0 && x < 0) continue;
+        // The front of the groin does not shape the shorts (that skin is removed), so they stay flat there.
+        if (Math.abs(x) < 75 && pz > 655 && pz < 820 && positions[i + 1] < -110) continue;
+        pts.push([x, positions[i + 1]]);
+      }
+      const cx = pts.reduce((a, p) => a + p[0], 0) / Math.max(1, pts.length);
+      const cy = pts.reduce((a, p) => a + p[1], 0) / Math.max(1, pts.length);
+      const r = new Array(sectors).fill(-1);
+      for (const [x, y] of pts) {
+        const s = Math.floor(((Math.atan2(y - cy, x - cx) + Math.PI * 2) % (Math.PI * 2)) / ((Math.PI * 2) / sectors)) % sectors;
+        r[s] = Math.max(r[s], Math.hypot(x - cx, y - cy));
+      }
+      // Fill empty sectors from their neighbours.
+      for (let s = 0; s < sectors; s++) {
+        if (r[s] >= 0) continue;
+        let a = 1;
+        while (a < sectors && r[(s - a + sectors) % sectors] < 0) a++;
+        let b = 1;
+        while (b < sectors && r[(s + b) % sectors] < 0) b++;
+        const ra = Math.max(0, r[(s - a + sectors) % sectors]);
+        const rb = Math.max(0, r[(s + b) % sectors]);
+        r[s] = ra + ((rb - ra) * a) / (a + b);
+      }
+      // Smooth around the ring without shrinking inside the skin.
+      const grown = r.map((_, s) => Math.max(r[(s - 1 + sectors) % sectors], r[s], r[(s + 1) % sectors]));
+      const smooth = grown.map((_, s) => {
+        let sum = 0;
+        for (let d = -2; d <= 2; d++) sum += grown[(s + d + sectors) % sectors];
+        return Math.max(r[s], sum / 5);
+      });
+      radii.push(smooth);
+      centres.push([cx, cy]);
+    }
+    // Smooth from ring to ring as well.
+    const n = tube.zs.length;
+    const R = radii.map((ring, k) =>
+      ring.map((v, s) => Math.max(v, (radii[Math.max(0, k - 1)][s] + v + radii[Math.min(n - 1, k + 1)][s]) / 3) + margin),
+    );
+    const C = centres.map((c, k) => {
+      const a = centres[Math.max(0, k - 1)];
+      const b = centres[Math.min(n - 1, k + 1)];
+      return [(a[0] + c[0] + b[0]) / 3, (a[1] + c[1] + b[1]) / 3];
+    });
+    const base = out.positions.length / 3;
+    tube.zs.forEach((z, k) => {
+      for (let s = 0; s < sectors; s++) {
+        const a = ((s + 0.5) / sectors) * Math.PI * 2;
+        out.positions.push(C[k][0] + R[k][s] * Math.cos(a), C[k][1] + R[k][s] * Math.sin(a), z);
+      }
+    });
+    for (let k = 0; k < n - 1; k++) {
+      for (let s = 0; s < sectors; s++) {
+        const a = base + k * sectors + s;
+        const b = base + k * sectors + ((s + 1) % sectors);
+        out.indices.push(a, b, a + sectors, b, b + sectors, a + sectors);
+      }
+    }
+    if (tube.cap) {
+      // Close the crotch with a flat panel.
+      const centre = out.positions.length / 3;
+      out.positions.push(C[0][0], C[0][1], tube.zs[0]);
+      for (let s = 0; s < sectors; s++) out.indices.push(centre, base + ((s + 1) % sectors), base + s);
+    }
+  }
+  return { positions: new Float32Array(out.positions), indices: new Uint32Array(out.indices) };
+}
+
+/** Removes the skin the shorts cover (keeping 10 mm under each hem). */
+function cutSkin(mesh) {
+  const { bottom, top, maxX } = SHORTS;
+  const p = mesh.positions;
+  const kept = [];
+  for (let t = 0; t < mesh.indices.length; t += 3) {
+    const [a, b, c] = [mesh.indices[t], mesh.indices[t + 1], mesh.indices[t + 2]];
+    const x = (p[a * 3] + p[b * 3] + p[c * 3]) / 3;
+    const z = (p[a * 3 + 2] + p[b * 3 + 2] + p[c * 3 + 2]) / 3;
+    if (Math.abs(x) < maxX && z > bottom + 10 && z < top - 10) continue;
+    kept.push(a, b, c);
+  }
+  return { ...mesh, indices: new Uint32Array(kept), triangles: kept.length / 3 };
+}
+
 await MeshoptSimplifier.ready;
 await MeshoptEncoder.ready;
 
 const groups = [];
+let clothes = null;
 for (const g of plan) {
   const files = g.ids.map(stlPath).filter((f) => {
     if (!existsSync(f)) console.warn(`  missing ${f}`);
@@ -159,11 +285,17 @@ for (const g of plan) {
   const idx = [];
   let tris = 0;
   for (const f of files) {
-    const mesh = readStl(f);
+    let mesh = readStl(f);
+    let flags = ["Prune", "Regularize"];
+    if (g.key === "skin") {
+      clothes = makeShorts(mesh.positions);
+      mesh = cutSkin(mesh);
+      flags = [...flags, "LockBorder"]; // keep the cut edge under the hems
+    }
     const target = Math.max(36, Math.floor(mesh.triangles * ratio) * 3);
     let indices = mesh.indices;
     if (target < indices.length) {
-      [indices] = MeshoptSimplifier.simplify(mesh.indices, mesh.positions, 3, target, 0.25, ["Prune", "Regularize"]);
+      [indices] = MeshoptSimplifier.simplify(mesh.indices, mesh.positions, 3, target, 0.25, flags);
     }
     if (indices.length === 0) continue;
     const c = compact(mesh.positions, indices);
@@ -177,6 +309,10 @@ for (const g of plan) {
   );
   groups.push({ ...g, positions: new Float32Array(pos), indices: new Uint32Array(idx) });
 }
+
+if (!clothes) throw new Error("no skin, so no shorts");
+groups.push({ key: "clothes", system: "skin", color: "#34507a", ...clothes });
+console.log(`clothes          generated → ${clothes.indices.length / 3} triangles`);
 
 // Axes: BodyParts3D is in millimetres, Z up, and the body faces -Y.
 // glTF: metres, Y up, facing +Z. Feet at y = 0, centred on x and z.
@@ -224,7 +360,7 @@ for (const g of groups) {
   const material = doc
     .createMaterial(g.key)
     .setBaseColorFactor([lin(r), lin(gr), lin(b), 1])
-    .setRoughnessFactor(0.7);
+    .setRoughnessFactor(g.key === "clothes" ? 0.85 : 0.7);
   const prim = doc.createPrimitive().setAttribute("POSITION", position).setIndices(indices).setMaterial(material);
   const mesh = doc.createMesh(g.key).addPrimitive(prim);
   scene.addChild(doc.createNode(g.key).setMesh(mesh).setExtras({ system: g.system }));
