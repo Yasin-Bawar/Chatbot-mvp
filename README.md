@@ -46,7 +46,7 @@
   - **«برگشت به هما و فرستادن نتیجه»** returns to the chat and sends the result as a card; Homa then explains each mistake. Quiz mode switches off so she explains instead of quizzing again.
   - Keyboard: 1–4 choose, Enter checks/continues, Esc exits.
 - **Interactive visuals** that open full screen by themselves once, for a new answer, and stay as a small card in the chat. They are kept calm and simple: one colour per subject (geography teal, chemistry green, physics blue), light textbook-style pages, and very little text.
-  - **3D Earth** (```` ```globe ````) for geography and history: a real NASA satellite photo with mountain relief (the Hindu Kush stands out), country borders, rivers with Dari names (آمو دریا، هلمند، هریرود…), highlighted countries, cities, and routes such as the Silk Road. One button switches to a clean political map. Tap a country to see its Dari name. Drag to turn and pinch to zoom. All map data and images are bundled (under 1 MB compressed) and load only when the globe opens.
+  - **3D Earth** (```` ```globe ````) for geography and history: a real NASA satellite photo with mountain relief (the Hindu Kush stands out), country borders, rivers with Dari names (آمو دریا، هلمند، هریرود…), highlighted countries, cities, and routes such as the Silk Road. One button switches to a clean political map. Tap a country to see its Dari name. **Countries mode** (the flag button, or `"countries": true`) names every country with its flag; bigger countries show first and smaller ones appear as you zoom in. Tap a country, or search for one by Dari or English name, to outline it and see a card with its flag. Drag to turn and pinch to zoom. All map data and images are bundled (under 1 MB compressed) and load only when the globe opens.
   - **3D molecules** (```` ```molecule ````): ball-and-stick models with single, double and triple bonds and a Dari legend of the elements. There are 13 built-in molecules (water, CO₂, methane, ammonia, ethanol, benzene, a salt crystal…). Any other molecule is laid out with a small VSEPR model, so water is bent, ammonia is a pyramid and benzene is flat.
   - **Physics experiments** (```` ```sim ````) with sliders and live formulas: projectile motion (earlier throws stay as faint trails to compare), pendulum, inclined plane with force arrows, an electric circuit with moving electrons and a glowing bulb, waves, **free fall** (a ball and a feather, with or without air), a **spring** with a live position–time graph, **collisions** of two carts (bouncing or sticking, momentum kept), a **convex lens** ray diagram (real and virtual images) and **refraction** of light with total internal reflection. Gravity can be switched between Earth, Moon and Jupiter.
   - **Chemistry experiments** (```` ```sim ````): the **Bohr atom** for elements 1–20 (protons, neutrons, electron shells), a **chemical reaction** where the atoms of a balanced equation break apart and form the products (with a check that both sides have the same atoms), a **pH scale** with indicator colours, H⁺/OH⁻ ions and everyday examples, and the **gas laws** with a piston, moving particles and a pressure gauge.
@@ -69,6 +69,10 @@
 - **Hybrid extraction**: the server reads the text layer for free. Each page is checked for problems that are common in Farsi PDFs: scanned pages, broken font encodings, and text stored backwards (visual order). Only those pages are sent to Claude, which reads them as PDF pages. An option can make Claude read every page.
 - Live progress, resume for books with unread pages, a page-by-page text preview (with «خواندن دوباره این صفحه با هوش مصنوعی» to re-read one page), "ask about this book", and delete.
 - Search runs on Postgres with Farsi-aware normalization and stemming. Claude searches the books through the tools `search_books` and `read_book_pages` and cites pages.
+
+### «نمایش‌ها»: every visual in one place
+
+The «نمایش‌ها» page (`/visuals`, in the side menu) lists every 3D visual and experiment by subject (geography, physics, chemistry, biology), with search and subject tabs: 4 globes (the Earth, countries of the world with flags, Afghanistan and its neighbours, the Silk Road), 10 physics experiments, 5 chemistry experiments, 13 molecules and the human body with its 8 systems. They open full screen right away, without asking Homa, so they use no AI credit. The list is in `lib/visuals/gallery.ts`.
 
 ### Interactive human body for biology
 
@@ -165,6 +169,7 @@ Optional variables:
 - 3D human body: [BodyParts3D](https://dbarchive.biosciencedbc.jp/en/bodyparts3d/), © The Database Center for Life Science (DBCLS), [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). Adapted: parts merged into organ groups, simplified and compressed (see `public/models/ATTRIBUTION.md`).
 - Earth photo and relief: NASA Blue Marble and elevation imagery (public domain), via the [webgl-earth](https://github.com/turban/webgl-earth) project.
 - Country borders and rivers: [Natural Earth](https://www.naturalearthdata.com/) (public domain), through `world-atlas`.
+- Flags: [flag-icons](https://github.com/lipis/flag-icons) (MIT), packed into one 110 KB image by `scripts/build-countries.mjs`; Persian country names from [i18n-iso-countries](https://github.com/michaelwittig/node-i18n-iso-countries) (MIT), with Afghan school spellings for the common ones.
 
 ## Development
 

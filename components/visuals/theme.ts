@@ -22,6 +22,9 @@ const CHEMISTRY = { subject: "chemistry", label: "کیمیا", accent: "#7c3aed"
 const PHYSICS = { subject: "physics", label: "فزیک", accent: "#0284c7", accentSoft: "#e0f2fe" } as const;
 const BIOLOGY = { subject: "biology", label: "بیولوژی", accent: "#16a34a", accentSoft: "#dcfce7" } as const;
 
+/** Name and colours of each subject (the «نمایش‌ها» page uses them for its tabs). */
+export const SUBJECT_THEMES = { geography: GEOGRAPHY, physics: PHYSICS, chemistry: CHEMISTRY, biology: BIOLOGY } as const;
+
 export function visualTheme(spec: VisualSpec): VisualTheme {
   if (spec.kind === "globe") return { ...GEOGRAPHY, kind: "کره زمین", dark: true };
   if (spec.kind === "molecule") return { ...CHEMISTRY, kind: "مولکول", dark: false };

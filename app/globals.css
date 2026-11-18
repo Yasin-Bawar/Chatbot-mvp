@@ -1497,6 +1497,133 @@ svg .chalk-pop { transform-box: fill-box; transform-origin: center; }
 @media (max-width: 640px) {
   .body-info { font-size: 13px; line-height: 1.8; padding: 10px 12px 10px 36px; }
 }
+/* «نمایش‌ها» page */
+.gallery-tabs {
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  border-radius: 16px;
+  padding: 4px;
+  background: var(--color-surface-2, #f1f5f9);
+}
+.gallery-tabs::-webkit-scrollbar { display: none; }
+.gallery-tabs button {
+  flex: none;
+  border-radius: 12px;
+  padding: 7px 14px;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #64748b;
+  white-space: nowrap;
+}
+.gallery-tabs button[aria-selected="true"] { color: #fff; background: var(--accent, #4f46e5); }
+.gallery-heading { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; font-size: 18px; font-weight: 900; }
+.gallery-heading small { font-size: 12.5px; font-weight: 700; color: var(--accent); background: var(--accent-soft); border-radius: 999px; padding: 0 9px; }
+.gallery-dot { width: 10px; height: 10px; border-radius: 999px; background: var(--accent); }
+.gallery-group { margin: 14px 2px 8px; font-size: 13px; font-weight: 700; color: #64748b; }
+.gallery-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  border-radius: 18px;
+  border: 1px solid var(--color-line, #e5e7eb);
+  background: var(--color-surface, #fff);
+  padding: 12px;
+  text-align: start;
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+}
+.gallery-card:hover { transform: translateY(-1px); border-color: color-mix(in srgb, var(--accent) 35%, transparent); box-shadow: 0 6px 18px rgba(16, 24, 40, 0.08); }
+.gallery-card:focus-visible { outline: 3px solid color-mix(in srgb, var(--accent) 45%, transparent); outline-offset: 2px; }
+.gallery-icon {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+.gallery-icon svg { width: 22px; height: 22px; }
+.gallery-icon-text { width: auto; min-width: 44px; padding: 0 8px; }
+.gallery-formula { direction: ltr; font-size: 14px; font-weight: 800; letter-spacing: 0.01em; }
+.gallery-hint {
+  display: -webkit-box;
+  margin-top: 1px;
+  overflow: hidden;
+  font-size: 12px;
+  line-height: 1.7;
+  color: #64748b;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+/* Globe "countries" mode: name and flag labels, search, picked country. */
+.flag {
+  display: inline-block;
+  flex: none;
+  border-radius: 2px;
+  background-repeat: no-repeat;
+  box-shadow: 0 0 0 1px rgba(15, 23, 42, 0.18);
+}
+.visual-label-flag { display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px; padding: 1px 7px 1px 5px; }
+.globe-search { position: absolute; top: 10px; inset-inline-start: 12px; width: min(260px, calc(100% - 110px)); }
+.globe-search label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 40px;
+  padding: 0 12px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.96);
+  color: #1e293b;
+  box-shadow: 0 4px 16px rgba(2, 6, 23, 0.3);
+}
+.globe-search label svg { width: 17px; height: 17px; flex: none; color: #64748b; }
+.globe-search input { min-width: 0; flex: 1; background: transparent; font-size: 14px; outline: none; }
+.globe-search input::placeholder { color: #94a3b8; }
+.globe-search-results {
+  margin-top: 6px;
+  overflow: hidden;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 8px 24px rgba(2, 6, 23, 0.35);
+}
+.globe-search-results button {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #1e293b;
+  text-align: start;
+}
+.globe-search-results button:hover, .globe-search-results button:focus-visible { background: #f1f5f9; outline: none; }
+.globe-country-card {
+  position: absolute;
+  left: 50%;
+  bottom: 68px;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  max-width: calc(100% - 24px);
+  border-radius: 18px;
+  padding: 12px 14px;
+  background: rgba(255, 255, 255, 0.97);
+  color: #1e293b;
+  box-shadow: 0 8px 28px rgba(2, 6, 23, 0.4);
+}
+.globe-country-card .flag { border-radius: 5px; }
+.globe-country-card b { display: block; font-size: 18px; line-height: 1.5; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.globe-country-card small { display: block; font-size: 12px; color: #64748b; text-align: end; }
+.globe-country-card > button { display: grid; place-items: center; width: 30px; height: 30px; flex: none; border-radius: 10px; color: #64748b; }
+.globe-country-card > button svg { width: 17px; height: 17px; }
 .visual-credit {
   position: absolute;
   inset-inline-end: 12px;

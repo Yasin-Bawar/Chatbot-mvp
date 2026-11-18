@@ -1,20 +1,6 @@
 "use client";
 
-import {
-  Activity,
-  BicepsFlexed,
-  Bone,
-  Brain,
-  Droplets,
-  Hand,
-  HeartPulse,
-  Pause,
-  PersonStanding,
-  Play,
-  Utensils,
-  Wind,
-  X,
-} from "lucide-react";
+import { Activity, Pause, Play, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 import { MeshoptDecoder } from "three/addons/libs/meshopt_decoder.module.js";
@@ -23,6 +9,7 @@ import { ORGANS, organsOf, SYSTEMS, type BodySystem } from "@/lib/visuals/anatom
 import type { AnatomySpec } from "@/lib/visuals/types";
 import { toFaDigits } from "@/lib/persian";
 import { createStage, easeInOut, NoWebGLError, type Label, type Stage } from "./stage";
+import { BODY_ICONS } from "./body-icons";
 import { VisualError } from "./VisualError";
 
 /**
@@ -32,18 +19,6 @@ import { VisualError } from "./VisualError";
  */
 
 const MODEL_URL = "/models/human-body.glb";
-
-const ICONS: Record<BodySystem | "all", React.ReactNode> = {
-  all: <PersonStanding />,
-  digestive: <Utensils />,
-  respiratory: <Wind />,
-  circulatory: <HeartPulse />,
-  nervous: <Brain />,
-  urinary: <Droplets />,
-  skeleton: <Bone />,
-  muscular: <BicepsFlexed />,
-  skin: <Hand />,
-};
 
 /** Where on a part its name sits, as a share of its height (default: the middle). */
 const LABEL_HEIGHT: Record<string, number> = { arteries: 0.32, veins: 0.75, ribs: 0.7, spine: 0.4 };
@@ -402,7 +377,7 @@ export default function Anatomy({ spec }: { spec: AnatomySpec }) {
           aria-label="تمام بدن"
           title="تمام بدن"
         >
-          {ICONS.all}
+          {BODY_ICONS.all}
           {system === null && <span>تمام بدن</span>}
         </button>
         {SYSTEMS.map((s) => (
@@ -415,7 +390,7 @@ export default function Anatomy({ spec }: { spec: AnatomySpec }) {
             aria-label={s.name}
             title={s.name}
           >
-            {ICONS[s.key]}
+            {BODY_ICONS[s.key]}
             {active?.key === s.key && <span>{s.name}</span>}
           </button>
         ))}

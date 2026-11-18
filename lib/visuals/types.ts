@@ -23,6 +23,8 @@ export interface GlobeSpec {
   view: "satellite" | "map";
   /** Show river names (rivers are always drawn). */
   rivers: boolean;
+  /** Name every country with its flag ("countries" mode). */
+  countries: boolean;
 }
 
 export interface MoleculeAtom {

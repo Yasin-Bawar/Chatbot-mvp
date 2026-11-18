@@ -1,20 +1,13 @@
 "use client";
 
-import { Crosshair, Map as MapIcon, Satellite, Tags } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { Crosshair, Flag, Map as MapIcon, Satellite, Search, Tags, X } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import type { Feature, Geometry, MultiPolygon, Polygon, Position } from "geojson";
 import type { GeometryCollection, Topology } from "topojson-specification";
-import {
-  countryLabel,
-  DARI_RIVER,
-  greatCircle,
-  latLonToVector,
-  pointInPolygons,
-  resolveCountry,
-  vectorToLatLon,
-} from "@/lib/visuals/geo";
+import { DARI_RIVER, greatCircle, latLonToVector, pointInPolygons, resolveCountry, vectorToLatLon } from "@/lib/visuals/geo";
 import type { GlobeSpec } from "@/lib/visuals/types";
+import { COUNTRIES, COUNTRY_BY_NAME, faName, flagStyle, searchCountries, type CountryInfo } from "./flags";
 import { createStage, easeInOut, NoWebGLError, type Label, type Stage } from "./stage";
 import { VisualError } from "./VisualError";
 
@@ -24,6 +17,7 @@ import { VisualError } from "./VisualError";
  *   borders and highlighted countries drawn on top;
  * - "map": a clean political map.
  * Country shapes: Natural Earth 1:50m (world-atlas). Rivers: Natural Earth.
+ * "Countries" mode names every country with its flag; tap one to pick it.
  */
 
 type View = "satellite" | "map";
@@ -59,7 +53,8 @@ function unwrap(ring: Position[]): Position[] {
 
 interface Painter {
   canvas: HTMLCanvasElement;
-  paint: (view: View) => void;
+  /** `selected`: index of a country to outline in yellow (-1 for none). */
+  paint: (view: View, selected?: number) => void;
 }
 
 /** Paints the flat (equirectangular) texture that is wrapped around the sphere. */
@@ -122,7 +117,18 @@ function makePainter(
     }
   };
 
-  const paint = (view: View) => {
+  const outline = (index: number) => {
+    if (index < 0) return;
+    traceCountry(index);
+    ctx.fillStyle = "rgba(250, 204, 21, 0.3)";
+    ctx.fill("evenodd");
+    ctx.lineJoin = "round";
+    ctx.strokeStyle = "#facc15";
+    ctx.lineWidth = 2.6 * s;
+    ctx.stroke();
+  };
+
+  const paint = (view: View, selected = -1) => {
     ctx.clearRect(0, 0, W, H);
     if (view === "satellite" && photo) {
       ctx.drawImage(photo, 0, 0, W, H);
@@ -149,6 +155,7 @@ function makePainter(
         ctx.lineWidth = 2 * s;
         ctx.stroke();
       });
+      outline(selected);
       return;
     }
     ctx.fillStyle = OCEAN;
@@ -172,6 +179,7 @@ function makePainter(
       });
       if (!emphasis) drawRivers("rgba(59, 130, 246, 0.55)");
     }
+    outline(selected);
   };
 
   return { canvas, paint };
@@ -259,6 +267,14 @@ export default function Globe({ spec }: { spec: GlobeSpec }) {
   const [labels, setLabels] = useState(true);
   const [view, setView] = useState<View>(spec.view);
   const viewRef = useRef<View>(spec.view);
+  // "Countries" mode: every country with its flag; tap or search to pick one.
+  const [countriesOn, setCountriesOn] = useState(spec.countries);
+  const countriesOnRef = useRef(spec.countries);
+  const showCountriesRef = useRef<((on: boolean) => void) | null>(null);
+  const pickRef = useRef<((name: string | null, fly: boolean) => void) | null>(null);
+  const [picked, setPicked] = useState<CountryInfo | null>(null);
+  const [query, setQuery] = useState("");
+  const results = useMemo(() => searchCountries(query), [query]);
   const [status, setStatus] = useState<"loading" | "ready" | "nowebgl" | "error">("loading");
 
   useEffect(() => {
@@ -426,7 +442,11 @@ export default function Globe({ spec }: { spec: GlobeSpec }) {
       const { lat, lon } = vectorToLatLon(hit.point.x, hit.point.y, hit.point.z);
       const country = countriesRef.find((c) => pointInPolygons(lon, lat, polygonsOf(c.geometry)));
       if (!country) return;
-      tapLabel.el.textContent = countryLabel(country.properties.name);
+      if (countriesOnRef.current) {
+        pickRef.current?.(country.properties.name, false);
+        return;
+      }
+      tapLabel.el.textContent = faName(country.properties.name);
       tapLabel.size = undefined;
       tapLabel.position.copy(hit.point).multiplyScalar(1.03);
       tapLabel.visible = true;
@@ -459,7 +479,7 @@ export default function Globe({ spec }: { spec: GlobeSpec }) {
           const name = resolveCountry(h.name, names);
           if (!name) return;
           highlighted.set(name, h.color ?? (i === 0 ? MAIN : OTHER));
-          highlightLabels.push({ name, label: countryLabel(name, h.label) });
+          highlightLabels.push({ name, label: h.label?.trim() || faName(name) });
         });
 
         // A sharper texture on bigger screens.
@@ -469,8 +489,9 @@ export default function Globe({ spec }: { spec: GlobeSpec }) {
         const texture = new THREE.CanvasTexture(painter.canvas);
         texture.colorSpace = THREE.SRGBColorSpace;
         texture.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
+        let selected = -1;
         const repaint = (v: View) => {
-          painter.paint(v);
+          painter.paint(v, selected);
           texture.needsUpdate = true;
         };
         repaint(viewRef.current);
@@ -478,9 +499,12 @@ export default function Globe({ spec }: { spec: GlobeSpec }) {
         material.map = texture;
         material.needsUpdate = true;
 
+        const shownHighlights: Label[] = [];
         for (const { name, label } of highlightLabels) {
           const c = countryCentre(countries.find((x) => x.properties.name === name)!);
-          stage.addLabel(label, vec(c.lat, c.lon, 1.02), { className: "visual-label-country", surface: true, priority: 3 });
+          shownHighlights.push(
+            stage.addLabel(label, vec(c.lat, c.lon, 1.02), { className: "visual-label-country", surface: true, priority: 3 }),
+          );
         }
         if (spec.rivers) {
           for (const river of rivers) {
@@ -493,6 +517,46 @@ export default function Globe({ spec }: { spec: GlobeSpec }) {
         }
         tapLabel = stage.addLabel("", new THREE.Vector3(), { className: "visual-label-country", surface: true, priority: 4 });
         tapLabel.visible = false;
+
+        // Countries mode. Bigger countries win when labels overlap; zoom in to see the small ones.
+        const indexByName = new Map(countries.map((c, i) => [c.properties.name, i]));
+        let flagLabels: Label[] | null = null;
+        const pick = (name: string | null, fly: boolean) => {
+          selected = name ? (indexByName.get(name) ?? -1) : -1;
+          repaint(viewRef.current);
+          const info = name ? (COUNTRY_BY_NAME.get(name) ?? null) : null;
+          setPicked(info);
+          if (info && fly) {
+            controls.autoRotate = false;
+            const d = Math.min(3.1, Math.max(1.7, camera.position.length()));
+            flight = { from: camera.position.clone(), to: vec(info.lat, info.lon, d), start: performance.now() };
+          }
+        };
+        const showCountries = (on: boolean) => {
+          if (on && !flagLabels) {
+            flagLabels = COUNTRIES.map((c) => {
+              const label = stage.addLabel(faName(c.name), vec(c.lat, c.lon, 1.015), {
+                className: "visual-label-flag",
+                surface: true,
+                priority: 1 + 0.99 * (1 - c.rank / COUNTRIES.length),
+              });
+              if (c.flag !== null) {
+                const flag = document.createElement("span");
+                flag.className = "flag";
+                Object.assign(flag.style, flagStyle(c.flag, 18));
+                label.el.prepend(flag);
+              }
+              return label;
+            });
+          }
+          for (const l of flagLabels ?? []) l.visible = on;
+          for (const l of shownHighlights) l.visible = !on;
+          if (!on && selected >= 0) pick(null, false);
+        };
+        pickRef.current = pick;
+        showCountriesRef.current = showCountries;
+        if (countriesOnRef.current) showCountries(true);
+
         setStatus("ready");
         flyToFocus();
       } catch (err) {
@@ -511,12 +575,27 @@ export default function Globe({ spec }: { spec: GlobeSpec }) {
       stageRef.current = null;
       flyRef.current = null;
       repaintRef.current = null;
+      pickRef.current = null;
+      showCountriesRef.current = null;
     };
   }, [spec]);
 
   useEffect(() => {
     stageRef.current?.setLabelsVisible(labels);
   }, [labels]);
+
+  const toggleCountries = () => {
+    const next = !countriesOn;
+    countriesOnRef.current = next;
+    setCountriesOn(next);
+    showCountriesRef.current?.(next);
+    if (!next) setQuery("");
+  };
+
+  const choose = (c: CountryInfo) => {
+    pickRef.current?.(c.name, true);
+    setQuery("");
+  };
 
   const switchView = () => {
     const next: View = view === "satellite" ? "map" : "satellite";
@@ -532,7 +611,59 @@ export default function Globe({ spec }: { spec: GlobeSpec }) {
     <div className="relative h-full w-full">
       <div ref={mountRef} className="visual-stage" />
       {status === "loading" && <div className="visual-loading">…</div>}
+      {countriesOn && status === "ready" && (
+        <div className="globe-search">
+          <label>
+            <Search />
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && results[0] && choose(results[0])}
+              placeholder="جستجوی کشور…"
+              aria-label="جستجوی کشور"
+            />
+            {query && (
+              <button type="button" onClick={() => setQuery("")} aria-label="پاک کردن">
+                <X />
+              </button>
+            )}
+          </label>
+          {results.length > 0 && (
+            <div className="globe-search-results">
+              {results.map((c) => (
+                <button key={c.name} type="button" onClick={() => choose(c)}>
+                  {c.flag !== null && <span className="flag" style={flagStyle(c.flag, 24)} />}
+                  <span>{faName(c.name)}</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+      {picked && countriesOn && (
+        <div className="globe-country-card" role="status">
+          {picked.flag !== null && <span className="flag" style={flagStyle(picked.flag, 64)} />}
+          <div className="min-w-0">
+            <b>{faName(picked.name)}</b>
+            <small dir="ltr">{picked.name}</small>
+          </div>
+          <button type="button" onClick={() => pickRef.current?.(null, false)} aria-label="بستن">
+            <X />
+          </button>
+        </div>
+      )}
       <div className="visual-tools">
+        <button
+          type="button"
+          onClick={toggleCountries}
+          className="visual-icon-btn"
+          data-active={countriesOn ? "true" : undefined}
+          aria-pressed={countriesOn}
+          aria-label="کشورها و بیرق‌ها"
+          title="کشورها و بیرق‌ها"
+        >
+          <Flag />
+        </button>
         <button
           type="button"
           onClick={() => flyRef.current?.()}

@@ -70,7 +70,7 @@ The app can show four kinds of interactive visuals. Each one opens full screen f
 \`\`\`globe
 {"title": "افغانستان و همسایه‌هایش", "focus": {"lat": 34, "lon": 66}, "zoom": 3, "highlight": ["Afghanistan", {"name": "Iran", "label": "ایران"}, "Pakistan", "Tajikistan", "Uzbekistan", "Turkmenistan", "China"], "markers": [{"lat": 34.53, "lon": 69.17, "label": "کابل"}], "routes": [{"points": [[34.5, 69.2], [36.7, 67.1], [39.65, 66.96]], "label": "راه ابریشم"}], "note": "یک جمله کوتاه دری درباره آنچه شاگرد می‌بیند"}
 \`\`\`
-   - "highlight": countries by their English name (a Dari "label" is optional; well-known countries get a Dari name automatically). "markers": cities or places with exact lat/lon and a Dari label. "routes": lists of [lat, lon] points. "zoom": 1 whole Earth … 4 one region. "focus": where to look first. "view": "satellite" (default, real photo) or "map" (political map). "rivers": true names the rivers. All fields except "title" are optional.
+   - "highlight": countries by their English name (a Dari "label" is optional; well-known countries get a Dari name automatically). "markers": cities or places with exact lat/lon and a Dari label. "routes": lists of [lat, lon] points. "zoom": 1 whole Earth … 4 one region. "focus": where to look first. "view": "satellite" (default, real photo) or "map" (political map). "rivers": true names the rivers. "countries": true names every country with its flag (for "countries of the world" or flags). All fields except "title" are optional.
 
 2. \`molecule\`: a 3D ball-and-stick model, for chemistry: the shape of a molecule, bonds (single/double/triple), bond angles, ionic crystals.
 \`\`\`molecule

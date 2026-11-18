@@ -83,6 +83,7 @@ function parseGlobe(o: Raw): GlobeSpec {
     focus: latLon(o.focus ?? o.center),
     view: o.view === "map" ? "map" : "satellite",
     rivers: o.rivers === true,
+    countries: o.countries === true || o.mode === "countries",
     zoom: zoom === null ? (markers.length || highlight.length ? 2 : 1) : Math.min(4, Math.max(1, zoom)),
     highlight,
     markers,

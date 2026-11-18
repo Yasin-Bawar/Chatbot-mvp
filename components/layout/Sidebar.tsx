@@ -2,7 +2,7 @@
 
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import { AnimatePresence, motion } from "motion/react";
-import { Ellipsis, History, House, Library, Pencil, Plus, Search, Trash2, UserRound, X } from "lucide-react";
+import { Box, Ellipsis, History, House, Library, Pencil, Plus, Search, Trash2, UserRound, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -15,6 +15,7 @@ import { Logo } from "@/components/ui/Logo";
 
 const NAV = [
   { href: "/", label: "خانه", Icon: House },
+  { href: "/visuals", label: "نمایش‌ها", Icon: Box },
   { href: "/library", label: "کتابخانه", Icon: Library },
   { href: "/history", label: "تاریخچه", Icon: History },
 ];
