@@ -5,7 +5,7 @@ import "./globals.css";
 import { AppShell } from "@/components/layout/AppShell";
 
 export const metadata: Metadata = {
-  title: "هما | معلم هوشمند",
+  title: "هما سعادت | معلم هوشمند",
   description: "معلم هوشمند برای شاگردان مکاتب افغانستان",
 };
 

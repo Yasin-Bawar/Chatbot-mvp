@@ -197,7 +197,7 @@ export const AssistantMessage = memo(function AssistantMessage({
       {/* Name row on top, so the answer itself can use the full width. */}
       <div className="flex h-7 items-center gap-2">
         <Orb size={22} busy={streaming} />
-        <span className="text-[13.5px] font-bold text-ink">هما</span>
+        <span className="text-[13.5px] font-bold text-ink">هما سعادت</span>
         {status && <span className="shimmer text-[12.5px] font-medium">{status}</span>}
       </div>
       <div className="min-w-0 space-y-2.5">
