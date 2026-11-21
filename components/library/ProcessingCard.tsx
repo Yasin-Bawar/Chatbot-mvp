@@ -94,7 +94,7 @@ export function ServerBookCard({ book }: { book: Book }) {
           <div className="truncate font-bold">{book.title}</div>
           <div className="text-xs text-muted">
             {phase === "done"
-              ? "آماده است! هما حالا از این کتاب درس می‌دهد. ✨"
+              ? "آماده است! همای سعادت (۲) حالا از این کتاب درس می‌دهد. ✨"
               : failed
                 ? "پردازش ناکام شد"
                 : phase === "queued"
@@ -132,7 +132,7 @@ export function ServerBookCard({ book }: { book: Book }) {
             detail={`${toFaDigits(book.aiDone)} / ${toFaDigits(book.aiTotal)}`}
           />
         )}
-        <Step state={phase === "done" ? "done" : "todo"} label="ذخیره در حافظه هما" />
+        <Step state={phase === "done" ? "done" : "todo"} label="ذخیره در حافظه همای سعادت (۲)" />
       </div>
 
       {!finished && (

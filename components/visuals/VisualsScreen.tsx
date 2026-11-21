@@ -109,7 +109,7 @@ export function VisualsScreen() {
           نمایش‌ها
         </h1>
         <p className="mt-2 text-sm leading-7 text-muted">
-          همه کره‌ها، مدل‌های سه‌بعدی و آزمایش‌ها در یک جا. مستقیم باز می‌شوند، بدون پرسیدن از هما.
+          همه کره‌ها، مدل‌های سه‌بعدی و آزمایش‌ها در یک جا. مستقیم باز می‌شوند، بدون پرسیدن از همای سعادت (۲).
         </p>
 
         <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center">

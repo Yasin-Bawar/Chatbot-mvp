@@ -474,7 +474,7 @@ function Results({
       <div className="mt-7 grid w-full gap-3">
         {canSend && result ? (
           <button type="button" onClick={onSend} className="exam-btn exam-btn-primary w-full">
-            <Send className="size-5" /> برگشت به هما و فرستادن نتیجه
+            <Send className="size-5" /> برگشت به همای سعادت (۲) و فرستادن نتیجه
           </button>
         ) : (
           <button type="button" onClick={onClose} className="exam-btn exam-btn-primary w-full">
