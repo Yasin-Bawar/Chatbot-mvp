@@ -34,7 +34,7 @@ function Note({ text, animate, delay }: { text: string; animate: boolean; delay:
   );
 }
 
-const StepView = memo(function StepView({ step, animate }: { step: BoardStep; animate: boolean }) {
+export const StepView = memo(function StepView({ step, animate }: { step: BoardStep; animate: boolean }) {
   const k = useContext(TimeScale);
   switch (step.kind) {
     case "heading":

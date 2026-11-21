@@ -1782,3 +1782,86 @@ svg .chalk-pop { transform-box: fill-box; transform-origin: center; }
 }
 /* The message box already shows focus on its border. */
 .composer-input:focus-visible { outline: none; }
+
+/* «معلم‌ها»: teacher cards */
+.teacher-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  border-radius: 20px;
+  border: 1px solid var(--color-line);
+  background: var(--color-surface);
+  padding: 16px;
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+a.teacher-card:hover { transform: translateY(-1px); box-shadow: 0 8px 22px rgba(16, 24, 40, 0.08); }
+.teacher-card-soon { opacity: 0.6; }
+.teacher-avatar { display: grid; place-items: center; flex: none; width: 52px; height: 52px; border-radius: 16px; color: #fff; }
+.teacher-live {
+  flex: none;
+  border-radius: 999px;
+  padding: 2px 10px;
+  font-size: 12px;
+  font-weight: 800;
+  color: #15803d;
+  background: #dcfce7;
+}
+
+/* A live voice lesson: the board and the teacher side by side (stacked on phones). */
+.lesson-layout { display: flex; min-height: 0; flex: 1; gap: 12px; padding: 12px; }
+.lesson-board { display: flex; min-width: 0; flex: 1; }
+.lesson-board .board-frame { width: 100%; }
+.lesson-panel { display: flex; width: 360px; flex: none; flex-direction: column; gap: 10px; min-height: 0; }
+.lesson-captions {
+  min-height: 0;
+  flex: 1;
+  overflow-y: auto;
+  border-radius: 18px;
+  border: 1px solid var(--color-line);
+  background: var(--color-surface);
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.lesson-line { max-width: 92%; border-radius: 14px; padding: 6px 12px; font-size: 14.5px; line-height: 1.9; }
+.lesson-who { display: block; font-size: 11px; font-weight: 800; opacity: 0.7; }
+.lesson-teacher { align-self: flex-end; background: #eef2ff; color: #1e1b4b; }
+.lesson-student { align-self: flex-start; background: #f1f5f9; }
+.lesson-partial { opacity: 0.65; font-style: italic; }
+.lesson-cut { font-size: 12px; color: var(--color-muted, #64748b); }
+.lesson-chip { flex: none; border-radius: 999px; padding: 3px 10px; font-size: 12px; font-weight: 700; color: #4338ca; background: #eef2ff; }
+.lesson-start, .lesson-end {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border-radius: 999px;
+  padding: 12px 24px;
+  font-weight: 800;
+  color: #fff;
+}
+.lesson-start { background: linear-gradient(135deg, #4f46e5, #60a5fa); box-shadow: 0 8px 22px rgba(79, 70, 229, 0.35); }
+.lesson-end { background: #ef4444; padding: 10px 18px; }
+.lesson-btn { display: grid; place-items: center; width: 46px; height: 46px; border-radius: 999px; background: var(--color-surface-2); color: var(--color-ink, #1e293b); }
+.lesson-btn-off { background: #fee2e2; color: #b91c1c; }
+.lesson-btn-on { background: #e0e7ff; color: #4338ca; }
+.lesson-type { display: flex; gap: 8px; border-radius: 16px; border: 1px solid var(--color-line); background: var(--color-surface); padding: 6px 6px 6px 12px; }
+.lesson-type input { min-width: 0; flex: 1; background: transparent; padding: 0 6px; outline: none; }
+.lesson-type button { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 12px; color: #fff; background: #4f46e5; }
+.lesson-type button:disabled { opacity: 0.4; }
+.lesson-orb-talk { animation: lesson-talk 0.9s ease-in-out infinite; }
+@keyframes lesson-talk { 50% { transform: scale(1.07); } }
+.lesson-head { display: flex; flex-direction: column; align-items: center; gap: 8px; padding-top: 8px; text-align: center; }
+@media (max-width: 860px) {
+  .lesson-layout { flex-direction: column; padding: 8px; gap: 8px; }
+  .lesson-board { flex: 0 0 36%; min-height: 0; }
+  .lesson-panel { width: auto; flex: 1; gap: 8px; }
+  /* A small orb next to the status line, so the captions get the room. */
+  .lesson-head { flex-direction: row; justify-content: center; padding-top: 0; }
+  .lesson-head .orb { width: 38px !important; height: 38px !important; }
+  .lesson-captions { min-height: 120px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .lesson-orb-talk { animation: none; }
+}

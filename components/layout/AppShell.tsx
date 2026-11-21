@@ -19,6 +19,8 @@ export function AppShell({ children }: { children: ReactNode }) {
   const router = useRouter();
   const setActiveChat = useChatStore((s) => s.setActiveChat);
   const chromeHidden = useUi((s) => s.chromeHidden) && pathname === "/";
+  // The login page stands alone (no menu, no chats).
+  const bare = pathname === "/login";
 
   // Close the mobile drawer on navigation.
   const [lastPath, setLastPath] = useState(pathname);
@@ -39,6 +41,8 @@ export function AppShell({ children }: { children: ReactNode }) {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [router, setActiveChat]);
+
+  if (bare) return <DirectionProvider dir="rtl">{children}</DirectionProvider>;
 
   return (
     <DirectionProvider dir="rtl">

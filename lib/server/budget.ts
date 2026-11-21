@@ -11,7 +11,7 @@ import { costUsd, type BilledUsage } from "./pricing";
  * Console, which the API itself enforces.
  */
 
-export type UsageKind = "chat" | "title" | "book";
+export type UsageKind = "chat" | "title" | "book" | "voice";
 
 export class BudgetExceededError extends Error {
   constructor() {

@@ -2,7 +2,7 @@
 
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import { AnimatePresence, motion } from "motion/react";
-import { Box, Ellipsis, History, House, Library, Pencil, Plus, Search, Trash2, UserRound, X } from "lucide-react";
+import { Box, Ellipsis, GraduationCap, History, House, Library, Pencil, Plus, Search, Trash2, UserRound, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -15,6 +15,7 @@ import { Logo } from "@/components/ui/Logo";
 
 const NAV = [
   { href: "/", label: "خانه", Icon: House },
+  { href: "/teachers", label: "معلم‌ها", Icon: GraduationCap },
   { href: "/visuals", label: "نمایش‌ها", Icon: Box },
   { href: "/library", label: "کتابخانه", Icon: Library },
   { href: "/history", label: "تاریخچه", Icon: History },
@@ -108,7 +109,7 @@ export function Sidebar({ onClose }: { onClose?: () => void }) {
 
       <nav className="mt-4 grid gap-0.5 px-3">
         {NAV.map(({ href, label, Icon }) => {
-          const active = pathname === href;
+          const active = pathname === href || (href !== "/" && pathname.startsWith(`${href}/`));
           return (
             <Link
               key={href}

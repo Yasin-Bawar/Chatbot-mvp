@@ -70,6 +70,23 @@
 - Live progress, resume for books with unread pages, a page-by-page text preview (with «خواندن دوباره این صفحه با هوش مصنوعی» to re-read one page), "ask about this book", and delete.
 - Search runs on Postgres with Farsi-aware normalization and stemming. Claude searches the books through the tools `search_books` and `read_book_pages` and cites pages.
 
+### «معلم‌ها»: voice teachers
+
+The «معلم‌ها» page (`/teachers`) has one voice teacher per subject; the **math teacher** is ready (the others show «به زودی»). It is a live private lesson:
+
+- The student talks (or types); the teacher answers **aloud**, sentence by sentence as the answer streams, and **writes on the chalkboard** at the same time (title, math lines with notes, graphs, the boxed answer).
+- The student can **interrupt**: talking while the teacher speaks stops the voice and the answer, and the teacher answers the new question. The teacher's own voice coming back through the microphone is ignored.
+- The teacher teaches step by step and asks the student to try the next step, instead of solving everything at once.
+- It always uses the cheapest model (Claude Haiku 5.5, no extended thinking) for speed and cost; usage is recorded as `voice`.
+
+Voice: with `AZURE_SPEECH_KEY` and `AZURE_SPEECH_REGION`, it uses Microsoft Azure Speech: a natural Persian voice (`fa-IR-DilaraNeural`, change with `AZURE_SPEECH_VOICE`) and Persian speech recognition. The key stays on the server; the browser gets a 10-minute token from `/api/speech/token`. The free tier (F0) includes 500,000 characters of speech and 5 hours of listening per month. Without a key, the browser's own speech is used, which is free: listening works in Chrome and Edge, and a Persian voice is built into Microsoft Edge (and some phones). If the browser has no Persian voice, the answers are shown as text; if it cannot listen, the student types.
+
+Code: `lib/teachers.ts` (teachers), `lib/prompts/voice-teacher.ts` (how the teacher talks and writes), `app/api/teacher/route.ts` (one streamed turn), `lib/voice/stream.ts` (splits speech from board lines), `lib/voice/engines.ts` (browser and Azure speech), `components/teachers/VoiceLesson.tsx` (the lesson).
+
+### Password
+
+Set `APP_PASSWORD` (one password, or several separated by commas) and the whole site asks for it at `/login`; without it the site is open. A login lasts 30 days (an HTTP-only cookie signed with HMAC); changing a password logs out everyone who used it. `proxy.ts` sends pages to `/login` and answers API calls with 401, but leaves open the login itself, the background book worker and Vercel Blob's signed upload callbacks.
+
 ### «نمایش‌ها»: every visual in one place
 
 The «نمایش‌ها» page (`/visuals`, in the side menu) lists every 3D visual and experiment by subject (geography, physics, chemistry, biology), with search and subject tabs: 4 globes (the Earth, countries of the world with flags, Afghanistan and its neighbours, the Silk Road), 10 physics experiments, 5 chemistry experiments, 13 molecules and the human body with its 8 systems. They open full screen right away, without asking Homa, so they use no AI credit. The list is in `lib/visuals/gallery.ts`.
