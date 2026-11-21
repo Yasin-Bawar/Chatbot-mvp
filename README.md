@@ -1,6 +1,6 @@
-# هما سعادت — معلم هوشمند برای شاگردان افغانستان
+# همای سعادت — معلم هوشمند برای شاگردان افغانستان
 
-**Homa Saadat** (هما سعادت) is a Farsi (Dari) AI teacher chatbot for school students in Afghanistan, built with Next.js and the official Anthropic SDK (Claude). Teachers upload school-book PDFs in the **Library**; Homa extracts the full text, stores it as memory, and teaches from the books with page citations.
+**Homay-e Saadat** (همای سعادت) is a Farsi (Dari) AI teacher chatbot for school students in Afghanistan, built with Next.js and the official Anthropic SDK (Claude). Teachers upload school-book PDFs in the **Library**; Homa extracts the full text, stores it as memory, and teaches from the books with page citations.
 
 <p align="center">
   <img src="docs/screenshots/home.jpg" alt="Home screen" width="760" />
