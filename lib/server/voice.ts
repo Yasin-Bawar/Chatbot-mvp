@@ -48,26 +48,36 @@ function reason(status: number, body: string): string {
 
 /** A Dari hint for the usual ElevenLabs problems. */
 function hint(status: number, body: string): string {
-  if (status === 401) return "کلید ElevenLabs درست نیست یا این بخش (Text to Speech / Speech to Text) برایش فعال نشده است.";
-  if (/missing_permissions|permission/i.test(body))
-    return "کلید ElevenLabs اجازه این کار را ندارد. در ElevenLabs، برای کلید «Text to Speech» و «Speech to Text» را فعال کنید.";
-  if (status === 402 || /quota|credits/i.test(body)) return "اعتبار ElevenLabs تمام شده است.";
+  if (/permission/i.test(body)) {
+    const what = /speech_to_text/i.test(body)
+      ? "Speech to Text"
+      : /text_to_speech/i.test(body)
+        ? "Text to Speech"
+        : "Text to Speech و Speech to Text";
+    return `کلید ElevenLabs اجازه «${what}» را ندارد. در ElevenLabs این اجازه را برای کلید فعال کنید.`;
+  }
+  if (/library voices/i.test(body)) return "پلان رایگان ElevenLabs صداهای Voice Library را از راه API اجازه نمی‌دهد.";
   if (/voice.*(not.*found|does not exist)|voice_not_found/i.test(body))
-    return "صدای انتخاب‌شده پیدا نشد. ELEVENLABS_VOICE_ID را بررسی کنید و صدا را به «My Voices» اضافه کنید.";
-  if (/library|free.*(plan|tier)|upgrade|subscription/i.test(body))
-    return "این صدا یا مدل در پلان رایگان ElevenLabs از راه API ممکن نیست.";
+    return "صدای انتخاب‌شده پیدا نشد. ELEVENLABS_VOICE_ID را بررسی کنید.";
+  if (status === 401) return "کلید ElevenLabs درست نیست.";
+  if (/quota|credits|insufficient/i.test(body)) return "اعتبار ElevenLabs تمام شده است.";
+  if (/free.*(plan|tier)|upgrade|subscription/i.test(body)) return "این کار در پلان رایگان ElevenLabs از راه API ممکن نیست.";
   return "";
 }
+
+/** A ready-made voice every account can use, also on the free plan (Sarah). */
+const DEFAULT_VOICE = "EXAVITQu4vr4xnSDxMaL";
 
 /** Dari text → MP3 audio (a streaming response body). Tries the newest Persian-capable models in turn. */
 export async function synthesize(text: string, signal?: AbortSignal): Promise<Response> {
   const key = env("ELEVENLABS_API_KEY");
   if (!key) throw new VoiceError("صدای معلم تنظیم نشده است.", 503);
   // A ready-made voice every account has (Sarah); change it with ELEVENLABS_VOICE_ID.
-  const voice = env("ELEVENLABS_VOICE_ID") || "EXAVITQu4vr4xnSDxMaL";
+  let voice = env("ELEVENLABS_VOICE_ID") || DEFAULT_VOICE;
   const models = [...new Set([env("ELEVENLABS_MODEL"), "eleven_v3", "eleven_multilingual_v2"].filter(Boolean))];
   let last = "";
-  for (const model of models) {
+  for (let i = 0; i < models.length; i++) {
+    const model = models[i];
     const res = await fetch(`${ELEVEN}/text-to-speech/${encodeURIComponent(voice)}?output_format=mp3_44100_64`, {
       method: "POST",
       headers: { "xi-api-key": key, "Content-Type": "application/json", Accept: "audio/mpeg" },
@@ -79,8 +89,14 @@ export async function synthesize(text: string, signal?: AbortSignal): Promise<Re
     last = reason(res.status, body);
     console.error("[voice] ElevenLabs TTS failed", model, last);
     const h = hint(res.status, body);
+    // The free plan refuses Voice Library voices through the API: use the default voice instead.
+    if (/library voices/i.test(body) && voice !== DEFAULT_VOICE) {
+      voice = DEFAULT_VOICE;
+      i--;
+      continue;
+    }
     // Key, credits or voice problems won't be fixed by another model.
-    if (h && !/مدل/.test(h)) throw new VoiceError(`${h} (${last})`, 502);
+    if (h) throw new VoiceError(`${h} (${last})`, 502);
   }
   throw new VoiceError(`صدای معلم ساخته نشد. (${last})`, 502);
 }
@@ -146,7 +162,7 @@ export async function checkVoice(): Promise<Record<string, string>> {
   const cfg = voiceConfig();
   out.speak = cfg.speak ?? "none (no ELEVENLABS_API_KEY)";
   out.listen = cfg.listen ?? "none (no GROQ_API_KEY or ELEVENLABS_API_KEY)";
-  out.voice_id = env("ELEVENLABS_VOICE_ID") || "EXAVITQu4vr4xnSDxMaL (default)";
+  out.voice_id = env("ELEVENLABS_VOICE_ID") || `${DEFAULT_VOICE} (default)`;
   if (cfg.speak) {
     try {
       const res = await synthesize("سلام");
