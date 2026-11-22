@@ -17,7 +17,8 @@ export function voiceConfig() {
   const groq = Boolean(env("GROQ_API_KEY"));
   return {
     speak: eleven ? ("elevenlabs" as const) : null,
-    listen: groq ? ("groq" as const) : eleven ? ("elevenlabs" as const) : null,
+    // VOICE_LISTEN=browser: let the browser listen (Chrome/Edge, free), even with an ElevenLabs key.
+    listen: env("VOICE_LISTEN") === "browser" ? null : groq ? ("groq" as const) : eleven ? ("elevenlabs" as const) : null,
   };
 }
 
