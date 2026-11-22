@@ -85,6 +85,8 @@ Voice (in this order of preference):
 2. **Microsoft Azure Speech**, with `AZURE_SPEECH_KEY` and `AZURE_SPEECH_REGION` (natural Persian voice `fa-IR-DilaraNeural`; free tier 500,000 characters and 5 hours a month).
 3. **The browser's own speech** (no keys): listening works in Chrome and Edge, and a Persian voice is built into Microsoft Edge. If the browser has no Persian voice, the answers are shown as text; if it cannot listen, the student types.
 
+If the voice does not work, open `/api/speech/check` on your site: it tries the voice and the listening once and shows ElevenLabs' or Groq's own error (for example a key without the "Text to Speech" / "Speech to Text" permission, a voice that is not in "My Voices", or no credits left). The lesson page shows the same reason under the captions. If a model is rejected, the app tries the next one (`eleven_v3`, then `eleven_multilingual_v2`; `scribe_v2`, then `scribe_v1`).
+
 The board: the teacher writes `@board {json}` lines (the chat board's JSON). The reader also accepts the other forms models produce (```board fences, bare JSON lines, `@board:`), and math the teacher only said out loud is put on the board anyway.
 
 Code: `lib/teachers.ts` (teachers), `lib/prompts/voice-teacher.ts` (how the teacher talks and writes), `app/api/teacher/route.ts` (one streamed turn), `lib/voice/stream.ts` (splits speech from board lines), `lib/voice/engines.ts` (browser and Azure speech), `lib/voice/server-engine.ts` and `lib/server/voice.ts` (ElevenLabs and Groq), `components/teachers/VoiceLesson.tsx` (the lesson).
