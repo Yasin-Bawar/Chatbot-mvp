@@ -79,9 +79,15 @@ The «معلم‌ها» page (`/teachers`) has one voice teacher per subject; th
 - The teacher teaches step by step and asks the student to try the next step, instead of solving everything at once.
 - It always uses the cheapest model (Claude Haiku 5.5, no extended thinking) for speed and cost; usage is recorded as `voice`.
 
-Voice: with `AZURE_SPEECH_KEY` and `AZURE_SPEECH_REGION`, it uses Microsoft Azure Speech: a natural Persian voice (`fa-IR-DilaraNeural`, change with `AZURE_SPEECH_VOICE`) and Persian speech recognition. The key stays on the server; the browser gets a 10-minute token from `/api/speech/token`. The free tier (F0) includes 500,000 characters of speech and 5 hours of listening per month. Without a key, the browser's own speech is used, which is free: listening works in Chrome and Edge, and a Persian voice is built into Microsoft Edge (and some phones). If the browser has no Persian voice, the answers are shown as text; if it cannot listen, the student types.
+Voice (in this order of preference):
 
-Code: `lib/teachers.ts` (teachers), `lib/prompts/voice-teacher.ts` (how the teacher talks and writes), `app/api/teacher/route.ts` (one streamed turn), `lib/voice/stream.ts` (splits speech from board lines), `lib/voice/engines.ts` (browser and Azure speech), `components/teachers/VoiceLesson.tsx` (the lesson).
+1. **ElevenLabs + Groq (recommended).** `ELEVENLABS_API_KEY` gives the teacher a natural voice: ElevenLabs' v3 model speaks Persian (default voice "Sarah", change with `ELEVENLABS_VOICE_ID`; model with `ELEVENLABS_MODEL`). Each sentence is turned into MP3 by `/api/speech/tts` while the previous one plays. For listening, the browser watches the microphone for speech (with echo cancellation), so the teacher stops as soon as the student starts talking; when the student pauses, the recording goes to `/api/speech/stt`, which uses **Groq Whisper** if `GROQ_API_KEY` is set (free tier, fast) or ElevenLabs Scribe with the same ElevenLabs key. The keys never leave the server. ElevenLabs' free plan has 10,000 credits a month (a few short lessons); Groq's free tier covers listening.
+2. **Microsoft Azure Speech**, with `AZURE_SPEECH_KEY` and `AZURE_SPEECH_REGION` (natural Persian voice `fa-IR-DilaraNeural`; free tier 500,000 characters and 5 hours a month).
+3. **The browser's own speech** (no keys): listening works in Chrome and Edge, and a Persian voice is built into Microsoft Edge. If the browser has no Persian voice, the answers are shown as text; if it cannot listen, the student types.
+
+The board: the teacher writes `@board {json}` lines (the chat board's JSON). The reader also accepts the other forms models produce (```board fences, bare JSON lines, `@board:`), and math the teacher only said out loud is put on the board anyway.
+
+Code: `lib/teachers.ts` (teachers), `lib/prompts/voice-teacher.ts` (how the teacher talks and writes), `app/api/teacher/route.ts` (one streamed turn), `lib/voice/stream.ts` (splits speech from board lines), `lib/voice/engines.ts` (browser and Azure speech), `lib/voice/server-engine.ts` and `lib/server/voice.ts` (ElevenLabs and Groq), `components/teachers/VoiceLesson.tsx` (the lesson).
 
 ### Password
 

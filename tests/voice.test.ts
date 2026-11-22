@@ -79,3 +79,43 @@ describe("password gate", () => {
     expect(await validSession(cookie, { APP_PASSWORD: "school-2026" })).toBe(false);
   });
 });
+
+describe("board lines in the forms models really write", () => {
+  it("accepts fenced blocks, bare JSON, a colon and list marks", () => {
+    const r = run(
+      [
+        "خوب، بیایید حل کنیم.",
+        "```board",
+        '{"title": "معادله"}',
+        '{"math": "x + 2 = 5"}',
+        "```",
+        '- @board: {"math": "x = 3"}',
+        '{"answer": "x = 3"}',
+        '`@board {"text": "تمام"}`',
+        "@board",
+        '{"step": "قدم دوم"}',
+        "آفرین!",
+      ].join("\n"),
+    );
+    expect(r.board).toEqual([
+      '{"title": "معادله"}',
+      '{"math": "x + 2 = 5"}',
+      '{"math": "x = 3"}',
+      '{"answer": "x = 3"}',
+      '{"text": "تمام"}',
+      '{"step": "قدم دوم"}',
+    ]);
+    expect(r.speech).toEqual(["خوب، بیایید حل کنیم.", "آفرین!"]);
+  });
+
+  it("puts spoken-only math on the board", () => {
+    const r = run("جواب $x = 2$ است. و $y=3$ هم.");
+    expect(r.board).toEqual(['{"math":"x = 2"}', '{"math":"y=3"}']);
+    expect(r.speech).toEqual(["جواب است.", "و هم."]);
+  });
+
+  it("does not repeat math the teacher already wrote", () => {
+    const r = run('@board {"math": "x=2"}\nجواب $x=2$ است.');
+    expect(r.board).toEqual(['{"math": "x=2"}']);
+  });
+});

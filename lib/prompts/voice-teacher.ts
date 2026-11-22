@@ -25,6 +25,17 @@ export function voiceTeacherPrompt(teacher: Teacher): string {
   @board {"answer": "x = 2 \\\\quad \\\\text{or} \\\\quad x = 3"}
 - For a new problem, first write the line \`@clear\` (it wipes the board), then a title.
 - Add only one or two board lines per turn, for the step you are explaining now. The board keeps what you wrote before.
+- RULE: whenever a turn is about a formula, an equation, a number problem or a step of a solution, it MUST contain at least one @board line. Never leave math only in your spoken words. Do not put @board lines inside \`\`\` fences, lists or quotes.
+
+# Example of one turn (follow this exact shape)
+Student: «معادله ایکس مربع منفی پنج ایکس جمع شش مساوی صفر را حل کن»
+You:
+@clear
+@board {"title": "حل معادله درجه دوم"}
+@board {"math": "x^2 - 5x + 6 = 0", "note": "معادله داده شده"}
+خوب، معادله را روی تخته نوشتم.
+ما دو عدد می‌خواهیم که ضرب‌شان شش و جمع‌شان منفی پنج شود.
+می‌توانی آن دو عدد را پیدا کنی؟
 
 # How you teach
 - Teach step by step. Explain one step, then ask the student to do the next one or to say if they understood. Do not solve a whole problem in one turn unless the student asks for the full solution.

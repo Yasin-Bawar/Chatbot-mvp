@@ -26,8 +26,15 @@ export function speakable(text: string): string {
     .trim();
 }
 
+/** Board JSON keys (the same as the chat's ```board block). */
+const BOARD_KEYS = /^\{\s*"(title|step|math|text|answer|graph|draw)"\s*:/;
+
 export class TeacherStream {
   private pending = "";
+  private inFence = false;
+  private expectJson = false;
+  private boardLines = 0;
+  private latex: string[] = [];
 
   push(chunk: string): TeacherChunk {
     const out: TeacherChunk = { speech: [], board: [], clear: false };
@@ -38,9 +45,9 @@ export class TeacherStream {
       this.pending = this.pending.slice(nl + 1);
       this.line(line, out, true);
     }
-    // An unfinished line: speak its finished sentences now, unless it may be a command.
+    // An unfinished line: speak its finished sentences now, unless it may be a board line.
     const head = this.pending.trimStart();
-    if (head && !"@board".startsWith(head.slice(0, 6)) && !head.startsWith("@")) {
+    if (head && !this.inFence && !this.expectJson && !/^[@{`]/.test(head)) {
       let m: RegExpMatchArray | null;
       while ((m = this.pending.match(SENTENCE))) {
         this.say(m[1], out);
@@ -56,20 +63,48 @@ export class TeacherStream {
     const rest = this.pending;
     this.pending = "";
     if (rest.trim()) this.line(rest, out, true);
+    // The teacher only said its math out loud: put that math on the board anyway.
+    if (this.boardLines === 0) {
+      for (const tex of this.latex.slice(0, 4)) out.board.push(JSON.stringify({ math: tex }));
+    }
+    this.latex = [];
+    this.boardLines = 0;
     return out;
   }
 
+  private board(json: string, out: TeacherChunk) {
+    out.board.push(json);
+    this.boardLines++;
+  }
+
   private line(raw: string, out: TeacherChunk, complete: boolean) {
-    const line = raw.trim();
+    // Models sometimes add list marks, quotes or backticks around commands.
+    const line = raw.trim().replace(/^[>*\-•]+\s*/, "");
     if (!line) return;
-    if (line.startsWith("@board")) {
-      const json = line.slice(6).trim();
-      if (json.startsWith("{")) out.board.push(json);
+    if (line.startsWith("```")) {
+      this.inFence = !this.inFence;
       return;
     }
-    if (line.startsWith("@clear")) {
-      out.clear = true;
-      out.board.length = 0;
+    const json = line.replace(/^`+|`+$/g, "").trim();
+    if (this.inFence || this.expectJson) {
+      this.expectJson = false;
+      if (json.startsWith("{")) this.board(json, out);
+      return;
+    }
+    const command = json.match(/^@\s*(board|clear)\b\s*:?\s*(.*)$/i);
+    if (command) {
+      if (command[1].toLowerCase() === "clear") {
+        out.clear = true;
+        out.board.length = 0;
+      } else if (command[2].startsWith("{")) {
+        this.board(command[2], out);
+      } else {
+        this.expectJson = true; // the JSON is on the next line
+      }
+      return;
+    }
+    if (BOARD_KEYS.test(json)) {
+      this.board(json, out);
       return;
     }
     if (line.startsWith("@")) return;
@@ -83,6 +118,10 @@ export class TeacherStream {
   }
 
   private say(text: string, out: TeacherChunk) {
+    for (const m of text.matchAll(/\$\$?([^$]+)\$\$?|\\\((.+?)\\\)/g)) {
+      const tex = (m[1] ?? m[2] ?? "").trim();
+      if (tex) this.latex.push(tex);
+    }
     const clean = speakable(text);
     if (clean) out.speech.push(clean);
   }

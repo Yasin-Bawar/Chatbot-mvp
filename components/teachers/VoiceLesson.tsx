@@ -8,7 +8,8 @@ import { parseBoard } from "@/lib/board/parse";
 import { writeDuration } from "@/lib/board/timing";
 import { useChatStore } from "@/lib/chat/store";
 import type { Teacher } from "@/lib/teachers";
-import { createVoiceEngine, type VoiceEngine } from "@/lib/voice/engines";
+import { createVoiceEngine, type Listener, type VoiceEngine } from "@/lib/voice/engines";
+import { unlockAudio } from "@/lib/voice/server-engine";
 import { boardRaw, soundsLikeEcho, TeacherStream, type TeacherChunk } from "@/lib/voice/stream";
 import { cn } from "@/lib/utils";
 import { StepView } from "@/components/board/Board";
@@ -33,8 +34,8 @@ const STATUS_TEXT: Record<Status, string> = {
   speaking: "صحبت می‌کنم… هر وقت خواستید، صحبت کنید",
 };
 
-/** Wait this long after the student stops talking before answering. */
-const END_OF_TURN_MS = 900;
+/** Wait this long after the student's words arrive before answering (the server engine already waited for a pause). */
+const END_OF_TURN_MS = { browser: 900, azure: 700, server: 150 } as const;
 
 export function VoiceLesson({ teacher }: { teacher: Teacher }) {
   const studentName = useChatStore((s) => s.settings.studentName);
@@ -113,6 +114,7 @@ export function VoiceLesson({ teacher }: { teacher: Teacher }) {
         }
         if (c.board.length) setBoard((b) => [...b, ...c.board]);
         for (const sentence of c.speech) {
+          engine.current?.prefetch?.(sentence); // prepare the voice while earlier sentences play
           queue = queue.then(async () => {
             if (turnId.current !== id) return;
             speaking.current = sentence;
@@ -122,6 +124,8 @@ export function VoiceLesson({ teacher }: { teacher: Teacher }) {
             });
             set("speaking");
             await engine.current?.speak(sentence);
+            const failed = engine.current?.speakError?.();
+            if (failed) setError(failed);
           });
         }
       };
@@ -170,11 +174,14 @@ export function VoiceLesson({ teacher }: { teacher: Teacher }) {
       heard.current = `${heard.current} ${text}`.trim();
       setPartial("");
       if (timer.current) clearTimeout(timer.current);
-      timer.current = setTimeout(() => {
-        const said = heard.current;
-        heard.current = "";
-        if (said) void send(said);
-      }, END_OF_TURN_MS);
+      timer.current = setTimeout(
+        () => {
+          const said = heard.current;
+          heard.current = "";
+          if (said) void send(said);
+        },
+        END_OF_TURN_MS[engine.current?.kind ?? "browser"],
+      );
     },
     [interrupt, send],
   );
@@ -182,7 +189,10 @@ export function VoiceLesson({ teacher }: { teacher: Teacher }) {
   const heardPartial = useCallback(
     (text: string) => {
       const busy = statusRef.current === "speaking" || statusRef.current === "thinking";
-      if (busy && (text.trim().length < 6 || soundsLikeEcho(text, speaking.current))) return;
+      if (busy && (text.trim().length < 6 || soundsLikeEcho(text, speaking.current))) {
+        if (text === "…") setPartial(text); // server engine: "listening to you"
+        return;
+      }
       if (busy) interrupt();
       setPartial(text);
       if (timer.current && text.trim()) clearTimeout(timer.current); // still talking
@@ -190,7 +200,25 @@ export function VoiceLesson({ teacher }: { teacher: Teacher }) {
     [interrupt],
   );
 
+  /** The student started talking (server engine: known before their words are). */
+  const heardStart = useCallback(() => {
+    const busy = statusRef.current === "speaking" || statusRef.current === "thinking";
+    if (busy) interrupt();
+    if (timer.current) clearTimeout(timer.current);
+  }, [interrupt]);
+
+  const listener = (): Listener => ({
+    onSpeechStart: heardStart,
+    onPartial: heardPartial,
+    onFinal: heardFinal,
+    onError: (m) => {
+      setError(m);
+      setShowKeyboard(true);
+    },
+  });
+
   const start = async () => {
+    unlockAudio(); // must happen inside the tap, before anything async (iPhones)
     setError("");
     set("connecting");
     try {
@@ -199,14 +227,7 @@ export function VoiceLesson({ teacher }: { teacher: Teacher }) {
       setEngineInfo({ kind: e.kind, canListen: e.canListen, canSpeak: e.canSpeak });
       if (!e.canListen) setShowKeyboard(true);
       if (e.canListen && micOnRef.current) {
-        await e.listen({
-          onPartial: heardPartial,
-          onFinal: heardFinal,
-          onError: (m) => {
-            setError(m);
-            setShowKeyboard(true);
-          },
-        });
+        await e.listen(listener());
       }
       const name = studentName?.trim();
       void send(name ? `[start] The student's name is ${name}.` : "[start]", true);
@@ -237,7 +258,7 @@ export function VoiceLesson({ teacher }: { teacher: Teacher }) {
     micOnRef.current = next;
     if (!e?.canListen) return;
     if (next) {
-      await e.listen({ onPartial: heardPartial, onFinal: heardFinal, onError: setError });
+      await e.listen(listener());
       if (statusRef.current === "idle") set("listening");
     } else {
       e.stopListening();
@@ -274,8 +295,11 @@ export function VoiceLesson({ teacher }: { teacher: Teacher }) {
           <p className="truncate text-xs text-muted">درس زنده با صدا · همای سعادت (۲)</p>
         </div>
         {engineInfo && (
-          <span className="lesson-chip" title={engineInfo.kind === "azure" ? "صدای Azure" : "صدای خود مرورگر"}>
-            {engineInfo.kind === "azure" ? "صدای طبیعی" : "صدای مرورگر"}
+          <span
+            className="lesson-chip"
+            title={engineInfo.kind === "server" ? "ElevenLabs" : engineInfo.kind === "azure" ? "صدای Azure" : "صدای خود مرورگر"}
+          >
+            {engineInfo.kind === "browser" ? "صدای مرورگر" : "صدای طبیعی"}
           </span>
         )}
       </div>

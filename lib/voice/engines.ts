@@ -1,7 +1,11 @@
 "use client";
 
+import { serverListener, serverSpeaker } from "./server-engine";
+
 /**
- * Hearing and speaking for the voice teachers. Two engines:
+ * Hearing and speaking for the voice teachers:
+ * - "server": ElevenLabs voice and Groq/ElevenLabs listening through this
+ *   app's server (lib/voice/server-engine.ts). Used when those keys are set.
  * - "azure": Microsoft Azure Speech (natural Persian voice and recognition).
  *   Used when the server has AZURE_SPEECH_KEY and AZURE_SPEECH_REGION; the
  *   browser only gets a short-lived token from /api/speech/token.
@@ -10,31 +14,62 @@
  */
 
 export interface Listener {
+  /** The student started talking (before their words are known). */
+  onSpeechStart?: () => void;
   onPartial: (text: string) => void;
   onFinal: (text: string) => void;
   onError: (message: string) => void;
 }
 
 export interface VoiceEngine {
-  kind: "azure" | "browser";
+  kind: "server" | "azure" | "browser";
   canListen: boolean;
   canSpeak: boolean;
   listen: (l: Listener) => Promise<void>;
   stopListening: () => void;
   /** Resolves when the sentence has been spoken (or was stopped). */
   speak: (text: string) => Promise<void>;
+  /** Start preparing a sentence that will be spoken soon (optional). */
+  prefetch?: (text: string) => void;
+  /** Why the last sentence could not be spoken, if it failed. */
+  speakError?: () => string;
   stopSpeaking: () => void;
   dispose: () => void;
 }
 
 const LANG = "fa-IR";
 
-type TokenInfo = { provider: "azure"; token: string; region: string; voice: string } | { provider: "browser" };
+type TokenInfo =
+  | { provider: "server"; speak: string | null; listen: string | null }
+  | { provider: "azure"; token: string; region: string; voice: string }
+  | { provider: "browser" };
 
 export async function createVoiceEngine(): Promise<VoiceEngine> {
   const info = (await fetch("/api/speech/token", { cache: "no-store" })
     .then((r) => r.json())
     .catch(() => ({ provider: "browser" }))) as TokenInfo;
+  if (info.provider === "server") {
+    // Whatever the server cannot do (no voice key, or no listening key) uses the browser.
+    const fallback = !info.speak || !info.listen ? await browserEngine() : null;
+    const speaker = info.speak ? serverSpeaker() : null;
+    const listener = info.listen ? serverListener(() => speaker?.isSpeaking() ?? false) : null;
+    return {
+      kind: "server",
+      canListen: listener ? true : fallback!.canListen,
+      canSpeak: speaker ? true : fallback!.canSpeak,
+      listen: (l) => (listener ? listener.listen(l) : fallback!.listen(l)),
+      stopListening: () => (listener ? listener.stopListening() : fallback!.stopListening()),
+      speak: (t) => (speaker ? speaker.speak(t) : fallback!.speak(t)),
+      prefetch: speaker ? speaker.prefetch : undefined,
+      speakError: speaker ? speaker.lastError : undefined,
+      stopSpeaking: () => (speaker ? speaker.stopSpeaking() : fallback!.stopSpeaking()),
+      dispose() {
+        speaker?.stopSpeaking();
+        listener?.stopListening();
+        fallback?.dispose();
+      },
+    };
+  }
   if (info.provider === "azure") {
     try {
       return await azureEngine(info.token, info.region, info.voice);
