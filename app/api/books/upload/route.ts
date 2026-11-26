@@ -1,5 +1,7 @@
 import { issueSignedToken } from "@vercel/blob";
 import { handleUpload, handleUploadPresigned, type HandleUploadBody, type HandleUploadPresignedBody } from "@vercel/blob/client";
+import { canUseLibrary } from "@/lib/auth";
+import { currentUser } from "@/lib/server/quota";
 import { blobMode, blobStoreId, blobToken, blobWebhookPublicKey } from "@/lib/server/storage";
 
 const MAX_BYTES = 300 * 1024 * 1024;
@@ -8,6 +10,15 @@ const PDF = ["application/pdf"];
 /** Only book files may be uploaded: books/<bookId>.pdf */
 function checkPathname(pathname: string) {
   if (!/^books\/[\w-]+\.pdf$/.test(pathname)) throw new Error("invalid pathname");
+}
+
+/**
+ * Upload permission is only given to the admin. (Blob's own "upload finished"
+ * callback has no session, so proxy.ts lets signed callbacks through; the
+ * permission itself is checked here.)
+ */
+async function checkAdmin(request: Request) {
+  if (!canUseLibrary(await currentUser(request))) throw new Error("forbidden");
 }
 
 /**
@@ -26,6 +37,7 @@ export async function POST(request: Request) {
         body,
         request,
         onBeforeGenerateToken: async (pathname) => {
+          await checkAdmin(request);
           checkPathname(pathname);
           return { allowedContentTypes: PDF, maximumSizeInBytes: MAX_BYTES, addRandomSuffix: true };
         },
@@ -39,6 +51,7 @@ export async function POST(request: Request) {
       request,
       webhookPublicKey: blobWebhookPublicKey(),
       getSignedToken: async (pathname) => {
+        await checkAdmin(request);
         checkPathname(pathname);
         const token = await issueSignedToken({
           storeId: blobStoreId(),

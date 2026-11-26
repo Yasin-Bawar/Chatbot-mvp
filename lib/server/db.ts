@@ -56,6 +56,14 @@ const SCHEMA = [
     web_searches INTEGER NOT NULL DEFAULT 0,
     cost_usd DOUBLE PRECISION NOT NULL DEFAULT 0
   )`,
+  // One row per AI question from an account with a daily limit (lib/server/quota.ts).
+  `CREATE TABLE IF NOT EXISTS user_questions (
+    id BIGSERIAL PRIMARY KEY,
+    username TEXT NOT NULL,
+    kind TEXT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+  )`,
+  `CREATE INDEX IF NOT EXISTS user_questions_user_time ON user_questions (username, created_at)`,
 ];
 
 /**

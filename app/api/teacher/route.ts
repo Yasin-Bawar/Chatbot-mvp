@@ -3,6 +3,7 @@ import { LIGHT_MODEL } from "@/lib/models";
 import { voiceTeacherPrompt } from "@/lib/prompts/voice-teacher";
 import { friendlyError, getAnthropic, hasApiKey, isMockMode } from "@/lib/server/anthropic";
 import { recordUsage } from "@/lib/server/budget";
+import { currentUser, takeQuestion } from "@/lib/server/quota";
 import { teacherById } from "@/lib/teachers";
 
 /**
@@ -71,6 +72,8 @@ export async function POST(req: Request) {
   if (!messages.length || messages[messages.length - 1].role !== "user") {
     return Response.json({ error: "invalid_input" }, { status: 400 });
   }
+  const refused = await takeQuestion(await currentUser(req), "voice");
+  if (refused) return refused;
 
   const encoder = new TextEncoder();
   const stream = new ReadableStream({

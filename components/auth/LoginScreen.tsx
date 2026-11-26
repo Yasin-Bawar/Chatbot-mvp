@@ -1,12 +1,13 @@
 "use client";
 
 import { motion } from "motion/react";
-import { Eye, EyeOff, LoaderCircle, LockKeyhole } from "lucide-react";
+import { Eye, EyeOff, LoaderCircle, LockKeyhole, UserRound } from "lucide-react";
 import { useEffect, useState } from "react";
 import { LogoMark } from "@/components/ui/Logo";
 
-/** The password page in front of the whole website (see lib/auth.ts). */
+/** The login page in front of the whole website (see lib/auth.ts). */
 export function LoginScreen() {
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [show, setShow] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -18,19 +19,19 @@ export function LoginScreen() {
     const q = new URLSearchParams(window.location.search);
     // eslint-disable-next-line react-hooks/set-state-in-effect -- reading the URL once after load
     setNext(q.get("next") ?? "/");
-    if (q.get("error")) setError("رمز درست نیست. دوباره امتحان کنید.");
+    if (q.get("error")) setError("نام کاربری یا رمز درست نیست. دوباره امتحان کنید.");
   }, []);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!password.trim() || busy) return;
+    if (!username.trim() || !password || busy) return;
     setBusy(true);
     setError("");
     try {
       const res = await fetch("/api/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ password }),
+        body: JSON.stringify({ username, password }),
       });
       const data = (await res.json().catch(() => ({}))) as { ok?: boolean; message?: string };
       if (!res.ok || !data.ok) {
@@ -58,9 +59,27 @@ export function LoginScreen() {
       >
         <LogoMark className="mx-auto size-14" />
         <h1 className="mt-3 text-[24px] font-black text-[#1e1b4b]">همای سعادت (۲)</h1>
-        <p className="mt-1 text-sm leading-7 text-muted">معلم هوشمند. برای ورود، رمز را بنویسید.</p>
+        <p className="mt-1 text-sm leading-7 text-muted">معلم هوشمند. برای ورود، نام کاربری و رمز را بنویسید.</p>
 
         <label className="mt-6 flex items-center gap-2 rounded-2xl border border-line bg-surface px-4 py-3 text-start shadow-[var(--shadow-sm)] focus-within:border-primary/40">
+          <UserRound className="size-4 shrink-0 text-muted" />
+          <input
+            type="text"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            placeholder="نام کاربری"
+            name="username"
+            autoComplete="username"
+            autoCapitalize="none"
+            spellCheck={false}
+            autoFocus
+            aria-label="نام کاربری"
+            dir="ltr"
+            className="min-w-0 flex-1 bg-transparent text-right outline-none placeholder:text-right"
+          />
+        </label>
+
+        <label className="mt-3 flex items-center gap-2 rounded-2xl border border-line bg-surface px-4 py-3 text-start shadow-[var(--shadow-sm)] focus-within:border-primary/40">
           <LockKeyhole className="size-4 shrink-0 text-muted" />
           <input
             type={show ? "text" : "password"}
@@ -69,7 +88,6 @@ export function LoginScreen() {
             placeholder="رمز"
             name="password"
             autoComplete="current-password"
-            autoFocus
             aria-label="رمز"
             className="min-w-0 flex-1 bg-transparent outline-none"
           />
@@ -92,13 +110,13 @@ export function LoginScreen() {
 
         <button
           type="submit"
-          disabled={busy || !password.trim()}
+          disabled={busy || !username.trim() || !password}
           className="bg-gradient-brand mt-5 flex w-full items-center justify-center gap-2 rounded-2xl py-3 font-bold text-white shadow-[0_8px_20px_rgba(79,70,229,0.3)] transition disabled:opacity-60"
         >
           {busy && <LoaderCircle className="size-4 animate-spin" />}
           ورود
         </button>
-        <p className="mt-4 text-xs leading-6 text-muted">رمز را از معلم یا مسئول مکتب بگیرید.</p>
+        <p className="mt-4 text-xs leading-6 text-muted">نام کاربری و رمز را از مدیر بگیرید.</p>
       </motion.form>
     </div>
   );

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { appPasswords, checkPassword, sessionFor, validSession } from "@/lib/auth";
+import { canUseLibrary, checkLogin, sessionFor, userFromSession } from "@/lib/auth";
 import { parseBoard } from "@/lib/board/parse";
 import { boardRaw, soundsLikeEcho, speakable, TeacherStream } from "@/lib/voice/stream";
 
@@ -57,26 +57,30 @@ describe("voice teacher stream", () => {
   });
 });
 
-describe("password gate", () => {
-  const env = { APP_PASSWORD: "school-2026, class9 " };
+describe("login accounts", () => {
+  const env = { AUTH_SECRET: "test-secret" };
 
-  it("reads one or more passwords", () => {
-    expect(appPasswords(env)).toEqual(["school-2026", "class9"]);
-    expect(appPasswords({})).toEqual([]);
+  it("accepts only the right username and password", () => {
+    expect(checkLogin("admin", "Yasin2025@")?.role).toBe("admin");
+    expect(checkLogin(" Teacher ", "12345678")).toMatchObject({ username: "teacher", role: "teacher", dailyLimit: 20 });
+    expect(checkLogin("teacher", "Yasin2025@")).toBeNull();
+    expect(checkLogin("admin", "")).toBeNull();
+    expect(checkLogin("nobody", "12345678")).toBeNull();
   });
 
-  it("accepts only the right password", () => {
-    expect(checkPassword(" class9", env)).toBe("class9");
-    expect(checkPassword("class", env)).toBeNull();
-    expect(checkPassword("", env)).toBeNull();
+  it("only the admin may use the library", () => {
+    expect(canUseLibrary(checkLogin("admin", "Yasin2025@"))).toBe(true);
+    expect(canUseLibrary(checkLogin("teacher", "12345678"))).toBe(false);
+    expect(canUseLibrary(null)).toBe(false);
   });
 
-  it("a session works until its password is changed", async () => {
-    const cookie = await sessionFor("class9", env);
-    expect(await validSession(cookie, env)).toBe(true);
-    expect(await validSession("forged", env)).toBe(false);
-    expect(await validSession(undefined, env)).toBe(false);
-    expect(await validSession(cookie, { APP_PASSWORD: "school-2026" })).toBe(false);
+  it("a session names its account and cannot be forged", async () => {
+    const cookie = await sessionFor("teacher", env);
+    expect((await userFromSession(cookie, env))?.username).toBe("teacher");
+    expect(await userFromSession(cookie.replace(/^teacher/, "admin"), env)).toBeNull();
+    expect(await userFromSession("admin.forged", env)).toBeNull();
+    expect(await userFromSession(undefined, env)).toBeNull();
+    expect(await userFromSession(cookie, { AUTH_SECRET: "another" })).toBeNull();
   });
 });
 

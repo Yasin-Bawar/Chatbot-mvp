@@ -137,7 +137,10 @@ export function VoiceLesson({ teacher }: { teacher: Teacher }) {
           body: JSON.stringify({ teacher: teacher.id, messages: history.current }),
           signal: ctrl.signal,
         });
-        if (!res.ok || !res.body) throw new Error(`teacher ${res.status}`);
+        if (!res.ok || !res.body) {
+          const data = (await res.json().catch(() => null)) as { message?: string } | null;
+          throw Object.assign(new Error(`teacher ${res.status}`), { userMessage: data?.message });
+        }
         const reader = res.body.getReader();
         const decoder = new TextDecoder();
         for (;;) {
@@ -158,7 +161,7 @@ export function VoiceLesson({ teacher }: { teacher: Teacher }) {
         if (turnId.current !== id) return;
         console.error(err);
         liveRaw.current = null;
-        setError("جواب نرسید. انترنت را بررسی کنید و دوباره بگویید.");
+        setError((err as { userMessage?: string }).userMessage ?? "جواب نرسید. انترنت را بررسی کنید و دوباره بگویید.");
         set(engine.current?.canListen && micOnRef.current ? "listening" : "idle");
       }
     },

@@ -4,6 +4,7 @@ import { modelById } from "@/lib/models";
 import { buildContextPrompt, TEACHER_PERSONA } from "@/lib/prompts/teacher";
 import { REFUSAL_TEXT, friendlyError, getAnthropic, hasApiKey, isMockMode } from "@/lib/server/anthropic";
 import { recordUsage } from "@/lib/server/budget";
+import { currentUser, takeQuestion } from "@/lib/server/quota";
 import { listBooks, type Book } from "@/lib/server/books-repo";
 import { isDbConfigured } from "@/lib/server/db";
 import { runMockChat } from "@/lib/server/mock";
@@ -91,6 +92,9 @@ export async function POST(req: Request) {
   } catch {
     return Response.json({ error: "Invalid request" }, { status: 400 });
   }
+  // Accounts with a daily limit (the teacher): count this question or stop here.
+  const refused = await takeQuestion(await currentUser(req), "chat");
+  if (refused) return refused;
 
   const abort = new AbortController();
   req.signal.addEventListener("abort", () => abort.abort());

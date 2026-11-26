@@ -2,14 +2,16 @@
 
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import { AnimatePresence, motion } from "motion/react";
-import { Box, Ellipsis, GraduationCap, History, House, Library, Pencil, Plus, Search, Trash2, UserRound, X } from "lucide-react";
+import { Box, Ellipsis, GraduationCap, History, House, Library, LogOut, Pencil, Plus, Search, Trash2, UserRound, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { sortedChats, useChatStore } from "@/lib/chat/store";
 import type { Chat } from "@/lib/chat/types";
+import { canUseLibrary } from "@/lib/auth";
+import { logout, useMe } from "@/lib/hooks/useMe";
 import { useMounted } from "@/lib/hooks/useMounted";
-import { normalizeFa } from "@/lib/persian";
+import { normalizeFa, toFaDigits } from "@/lib/persian";
 import { cn, DATE_GROUP_ORDER, dateGroup, type DateGroup } from "@/lib/utils";
 import { Logo } from "@/components/ui/Logo";
 
@@ -35,6 +37,9 @@ export function Sidebar({ onClose }: { onClose?: () => void }) {
   const chats = useChatStore((s) => s.chats);
   const activeChatId = useChatStore((s) => s.activeChatId);
   const setActiveChat = useChatStore((s) => s.setActiveChat);
+  const me = useMe();
+  // The library is only for the admin (hidden until we know who is logged in).
+  const nav = NAV.filter((n) => n.href !== "/library" || canUseLibrary(me.user));
   const [query, setQuery] = useState("");
   const searchRef = useRef<HTMLInputElement>(null);
 
@@ -108,7 +113,7 @@ export function Sidebar({ onClose }: { onClose?: () => void }) {
       </div>
 
       <nav className="mt-4 grid gap-0.5 px-3">
-        {NAV.map(({ href, label, Icon }) => {
+        {nav.map(({ href, label, Icon }) => {
           const active = pathname === href || (href !== "/" && pathname.startsWith(`${href}/`));
           return (
             <Link
@@ -251,19 +256,43 @@ function StudentFooter() {
   const mounted = useMounted();
   const name = useChatStore((s) => s.settings.studentName);
   const updateSettings = useChatStore((s) => s.updateSettings);
+  const { user, usedToday } = useMe();
+  const limit = user?.dailyLimit ?? null;
   return (
-    <button
-      type="button"
-      onClick={() => updateSettings({ askedName: false })}
-      className="m-3 mt-0 flex items-center gap-3 rounded-2xl border border-line bg-surface-2/60 px-3 py-2.5 text-start transition hover:border-primary/30"
-    >
-      <span className="bg-gradient-brand grid size-9 place-items-center rounded-xl text-white">
-        <UserRound className="size-[18px]" />
-      </span>
-      <span className="min-w-0 flex-1">
-        <span className="block truncate text-sm font-semibold">{mounted && name ? name : "شاگرد عزیز"}</span>
-        <span className="block text-xs text-muted">تغییر نام</span>
-      </span>
-    </button>
+    <div className="m-3 mt-0 rounded-2xl border border-line bg-surface-2/60">
+      <button
+        type="button"
+        onClick={() => updateSettings({ askedName: false })}
+        className="flex w-full items-center gap-3 rounded-2xl px-3 py-2.5 text-start transition hover:bg-surface-2"
+      >
+        <span className="bg-gradient-brand grid size-9 place-items-center rounded-xl text-white">
+          <UserRound className="size-[18px]" />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block truncate text-sm font-semibold">{mounted && name ? name : "شاگرد عزیز"}</span>
+          <span className="block text-xs text-muted">تغییر نام</span>
+        </span>
+      </button>
+      {user && (
+        <div className="flex items-center gap-2 border-t border-line px-3 py-2 text-xs text-muted">
+          <span className="min-w-0 flex-1 truncate">
+            حساب: <b className="font-semibold text-ink-2">{user.name}</b>
+            {limit !== null && (
+              <>
+                {" · "}امروز {toFaDigits(String(usedToday ?? 0))} از {toFaDigits(String(limit))} سوال
+              </>
+            )}
+          </span>
+          <button
+            type="button"
+            onClick={() => void logout()}
+            className="flex items-center gap-1 rounded-lg px-2 py-1 font-semibold text-ink-2 hover:bg-surface hover:text-danger"
+          >
+            <LogOut className="size-3.5" />
+            خروج
+          </button>
+        </div>
+      )}
+    </div>
   );
 }

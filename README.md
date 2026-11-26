@@ -93,7 +93,14 @@ Code: `lib/teachers.ts` (teachers), `lib/prompts/voice-teacher.ts` (how the teac
 
 ### Password
 
-Set `APP_PASSWORD` (one password, or several separated by commas) and the whole site asks for it at `/login`; without it the site is open. A login lasts 30 days (an HTTP-only cookie signed with HMAC); changing a password logs out everyone who used it. `proxy.ts` sends pages to `/login` and answers API calls with 401, but leaves open the login itself, the background book worker and Vercel Blob's signed upload callbacks.
+The whole site needs a login at `/login`. For now there are two fixed accounts (passwords in `lib/auth.ts`):
+
+| Username | Can do |
+| --- | --- |
+| `admin` | everything, no daily limit |
+| `teacher` | chat, voice teachers and visuals; **20 AI questions a day** (chat and voice together, counted from midnight Kabul time); **no library** (the page and adding or deleting books are blocked; books already in the library can still be used in a chat) |
+
+A login lasts 30 days (an HTTP-only cookie signed with HMAC; set `AUTH_SECRET` to a long random value). Changing a password in `lib/auth.ts` logs that account out. `proxy.ts` sends pages to `/login` and answers API calls with 401, but leaves open the login itself, the background book worker and Vercel Blob's signed upload callbacks (the upload route itself only gives upload permission to the admin). The daily count is stored in the database (`user_questions`).
 
 ### «نمایش‌ها»: every visual in one place
 

@@ -1,6 +1,7 @@
 "use client";
 
 import { nanoid } from "nanoid";
+import { refreshUsage } from "@/lib/hooks/useMe";
 import { createNdjsonParser, type ChatAttachment } from "@/lib/stream-protocol";
 import { buildChatPayload } from "./payload";
 import { useChatStore } from "./store";
@@ -110,7 +111,10 @@ async function streamAssistant(chatId: string) {
       signal: controller.signal,
     });
     if (!res.ok || !res.body) {
-      throw new Error(res.status === 413 ? "فایل ضمیمه خیلی بزرگ است." : "اتصال با سرور برقرار نشد.");
+      // The server explains some refusals (e.g. the daily limit) in Dari.
+      const data = (await res.json().catch(() => null)) as { message?: string } | null;
+      if (res.status === 401) window.location.replace("/login");
+      throw new Error(data?.message ?? (res.status === 413 ? "فایل ضمیمه خیلی بزرگ است." : "اتصال با سرور برقرار نشد."));
     }
     const parser = createNdjsonParser();
     const reader = res.body.pipeThrough(new TextDecoderStream()).getReader();
@@ -131,6 +135,7 @@ async function streamAssistant(chatId: string) {
     }
   } finally {
     controllers.delete(chatId);
+    void refreshUsage();
     const message = useChatStore.getState().chats[chatId]?.messages.find((m) => m.id === assistantId);
     if (message?.status === "streaming") {
       useChatStore.getState().updateMessage(chatId, assistantId, {

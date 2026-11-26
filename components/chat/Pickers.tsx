@@ -6,6 +6,8 @@ import { BookOpen, Check, ChevronDown, Library } from "lucide-react";
 import Link from "next/link";
 import { useEffect } from "react";
 import { useChatStore } from "@/lib/chat/store";
+import { canUseLibrary } from "@/lib/auth";
+import { useMe } from "@/lib/hooks/useMe";
 import { useMounted } from "@/lib/hooks/useMounted";
 import { useBooksStore } from "@/lib/library/books-store";
 import { MODELS, modelById } from "@/lib/models";
@@ -57,6 +59,7 @@ export function ModelPicker() {
 
 export function BookScopePicker() {
   const mounted = useMounted();
+  const me = useMe();
   const bookIds = useChatStore((s) => s.settings.bookIds);
   const updateSettings = useChatStore((s) => s.updateSettings);
   const { books, loaded, refresh } = useBooksStore();
@@ -103,10 +106,14 @@ export function BookScopePicker() {
             {ready.length === 0 && (
               <div className="px-3 py-4 text-center text-sm leading-7 text-muted">
                 هنوز کتابی اضافه نشده.
-                <br />
-                <Link href="/library" className="font-semibold text-primary">
-                  رفتن به کتابخانه
-                </Link>
+                {canUseLibrary(me.user) && (
+                  <>
+                    <br />
+                    <Link href="/library" className="font-semibold text-primary">
+                      رفتن به کتابخانه
+                    </Link>
+                  </>
+                )}
               </div>
             )}
             {ready.map((b) => {
